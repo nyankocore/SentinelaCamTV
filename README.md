@@ -13,7 +13,7 @@ Ele foi criado para monitoramento local, com foco em privacidade, controle remot
 - Cadastro por RTSP direto.
 - Descoberta e cadastro por ONVIF.
 - Suporte a DVRs/NVRs com múltiplos canais quando expostos por ONVIF.
-- Alternância entre vídeo HD e SD.
+- Alternância entre vídeo HD e SD. AVISO: Várias câmeras em HD no mosaico pode travar o app em aparelhos modestos.
 - Interface pensada para controle remoto.
 - Logs locais para suporte, exportados manualmente pelo usuário.
 - Atualização manual pelo GitHub Releases.
@@ -42,15 +42,17 @@ Escolha o APK da arquitetura do seu aparelho. Se não souber qual usar, baixe o 
 
 ## Suporte
 
-Relatos de bugs são bem-vindos pelas Issues:
-
+Encontrou algum problema? relate na página Issues:
 https://github.com/nyankocore/SentinelaCamTV/issues
+Para facilitar o diagnóstico envie o log do app, exporte o arquivo pelo app, envie para um serviço de nuvem e cole o link de compartilhamento do arquivo no relato do problema.
 
-Se precisar enviar logs, exporte o arquivo pelo app, envie para um serviço de nuvem e cole o link de compartilhamento no relato do problema.
+## Sugestões, feedback, perguntas
+
+https://github.com/nyankocore/SentinelaCamTV/discussions
 
 ## Estado do projeto
 
-O app está em desenvolvimento ativo. Algumas funções ainda podem mudar, e o seu feedback é muito importante.
+O app está em desenvolvimento ativo. Algumas funções ainda podem mudar.
 
 No momento, o projeto está em desenvolvimento individual. Relatos de bugs são bem-vindos, mas contribuições de código ainda não estão abertas.
 
