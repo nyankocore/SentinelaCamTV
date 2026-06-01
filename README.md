@@ -26,7 +26,7 @@ As câmeras são acessadas localmente. O aplicativo não envia imagens, credenci
 
 Baixe a versão mais recente na página de releases:
 
-https://github.com/d3funto/SentinelaCamTV/releases/latest
+https://github.com/nyankocore/SentinelaCamTV/releases/latest
 
 ## Estado do projeto
 

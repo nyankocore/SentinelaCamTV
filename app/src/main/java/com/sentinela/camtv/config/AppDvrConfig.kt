@@ -12,7 +12,7 @@ data class DvrConnectionConfig(
 fun DvrConnectionConfig.isConfigured(): Boolean = host.isNotBlank()
 
 object AppDvrConfig {
-    val intelbrasMhdx1004 = DvrConnectionConfig(
+    val localDebugDvr = DvrConnectionConfig(
         host = BuildConfig.SENTINELA_DVR_HOST,
         username = BuildConfig.SENTINELA_DVR_USERNAME,
         password = BuildConfig.SENTINELA_DVR_PASSWORD,

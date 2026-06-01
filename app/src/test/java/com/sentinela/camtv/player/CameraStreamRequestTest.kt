@@ -3,7 +3,7 @@ package com.sentinela.camtv.player
 import com.sentinela.camtv.config.FULLSCREEN_SUBTYPE
 import com.sentinela.camtv.config.MOSAIC_SUBTYPE
 import com.sentinela.camtv.domain.Camera
-import com.sentinela.camtv.domain.IntelbrasDvrChannel
+import com.sentinela.camtv.domain.DvrRtspChannel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -11,7 +11,7 @@ class CameraStreamRequestTest {
     private val camera = Camera(
         id = "cam-1",
         name = "CAM1",
-        source = IntelbrasDvrChannel(
+        source = DvrRtspChannel(
             channel = 1,
             subtype = MOSAIC_SUBTYPE,
         ),

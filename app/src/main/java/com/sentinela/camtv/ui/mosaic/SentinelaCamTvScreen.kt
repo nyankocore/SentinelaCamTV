@@ -31,8 +31,8 @@ import com.sentinela.camtv.config.AppDvrConfig
 import com.sentinela.camtv.config.DvrConnectionConfig
 import com.sentinela.camtv.config.isConfigured
 import com.sentinela.camtv.domain.Camera
-import com.sentinela.camtv.domain.IntelbrasDvrChannel
-import com.sentinela.camtv.player.IntelbrasRtspUrlBuilder
+import com.sentinela.camtv.domain.DvrRtspChannel
+import com.sentinela.camtv.player.DvrRtspUrlBuilder
 import com.sentinela.camtv.player.PlayerMode
 import com.sentinela.camtv.player.streamRequestFor
 import com.sentinela.camtv.ui.common.QuickMenu
@@ -56,14 +56,14 @@ fun MosaicScreen(
     onOpenHome: () -> Unit,
     onOpenSettings: () -> Unit,
     onExitApp: () -> Unit,
-    dvrConfig: DvrConnectionConfig = AppDvrConfig.intelbrasMhdx1004,
+    dvrConfig: DvrConnectionConfig = AppDvrConfig.localDebugDvr,
 ) {
     val mosaicViewModel: MosaicViewModel = viewModel(factory = viewModelFactory)
     val fullscreenViewModel: FullscreenPlayerViewModel = viewModel(factory = viewModelFactory)
     val state by mosaicViewModel.state.collectAsState()
     val fullscreenState by fullscreenViewModel.state.collectAsState()
     val rtspUrlBuilder = remember(dvrConfig) {
-        IntelbrasRtspUrlBuilder(dvrConfig)
+        DvrRtspUrlBuilder(dvrConfig)
     }
     var showCameraFocusIndicator by remember { mutableStateOf(true) }
     var focusActivityToken by remember { mutableIntStateOf(0) }
@@ -147,7 +147,7 @@ fun MosaicScreen(
             return@Box
         }
 
-        if (state.cameras.any { it.source is IntelbrasDvrChannel } && !dvrConfig.isConfigured()) {
+        if (state.cameras.any { it.source is DvrRtspChannel } && !dvrConfig.isConfigured()) {
             MissingDvrConfigMessage()
             return@Box
         }
@@ -228,7 +228,7 @@ fun SentinelaCamTvScreen(
 @Composable
 private fun MosaicGrid(
     state: MosaicUiState,
-    rtspUrlBuilder: IntelbrasRtspUrlBuilder,
+    rtspUrlBuilder: DvrRtspUrlBuilder,
     onCameraClick: (Camera) -> Unit,
     onCameraLongClick: (Camera) -> Unit,
     onMosaicHdSoftwareDecoder: (cameraId: String, reason: String) -> Unit,
@@ -392,7 +392,7 @@ private fun MissingDvrConfigMessage() {
         contentAlignment = Alignment.Center,
     ) {
         MosaicMessageCard(
-            message = "Configure sentinela.dvr.host no local.properties para testar canais Intelbras.",
+            message = "Configure sentinela.dvr.host no local.properties para testar canais DVR locais.",
         )
     }
 }

@@ -11,7 +11,7 @@ data class Camera(
 
 sealed interface CameraSource
 
-data class IntelbrasDvrChannel(
+data class DvrRtspChannel(
     val channel: Int,
     val subtype: Int,
 ) : CameraSource
@@ -28,6 +28,7 @@ data class OnvifCameraSource(
 ) : CameraSource
 
 enum class CameraSourceType {
+    // Nome preservado para compatibilidade com bancos Room antigos.
     INTELBRAS_DVR_CHANNEL,
     ONVIF,
     RTSP_MANUAL,

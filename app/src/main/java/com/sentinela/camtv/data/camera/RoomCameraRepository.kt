@@ -6,7 +6,7 @@ import com.sentinela.camtv.data.security.CredentialCipher
 import com.sentinela.camtv.domain.Camera
 import com.sentinela.camtv.domain.CameraSource
 import com.sentinela.camtv.domain.CameraSourceType
-import com.sentinela.camtv.domain.IntelbrasDvrChannel
+import com.sentinela.camtv.domain.DvrRtspChannel
 import com.sentinela.camtv.domain.OnvifCameraSource
 import com.sentinela.camtv.domain.RtspCameraSource
 import kotlinx.coroutines.flow.Flow
@@ -125,7 +125,7 @@ class RoomCameraRepository(
 
     private fun Camera.toEntity(positionFallback: Int): CameraEntity {
         val sourceType = when (source) {
-            is IntelbrasDvrChannel -> CameraSourceType.INTELBRAS_DVR_CHANNEL
+            is DvrRtspChannel -> CameraSourceType.INTELBRAS_DVR_CHANNEL
             is OnvifCameraSource -> CameraSourceType.ONVIF
             is RtspCameraSource -> CameraSourceType.RTSP_MANUAL
         }
@@ -139,14 +139,14 @@ class RoomCameraRepository(
             mainRtspUrl = when (source) {
                 is OnvifCameraSource -> source.mainRtspUrl
                 is RtspCameraSource -> source.mainRtspUrl
-                is IntelbrasDvrChannel -> null
+                is DvrRtspChannel -> null
             },
             subRtspUrl = when (source) {
                 is OnvifCameraSource -> source.subRtspUrl
                 is RtspCameraSource -> source.subRtspUrl
-                is IntelbrasDvrChannel -> null
+                is DvrRtspChannel -> null
             },
-            intelbrasChannel = (source as? IntelbrasDvrChannel)?.channel,
+            intelbrasChannel = (source as? DvrRtspChannel)?.channel,
             usernameCipherText = null,
             passwordCipherText = null,
             position = if (position > 0) position else positionFallback,
@@ -156,7 +156,7 @@ class RoomCameraRepository(
     }
 
     private fun CameraSource.endpoint(): String = when (this) {
-        is IntelbrasDvrChannel -> "intelbras://channel/$channel"
+        is DvrRtspChannel -> "dvr-rtsp://channel/$channel"
         is OnvifCameraSource -> deviceServiceUrl
         is RtspCameraSource -> mainRtspUrl
     }
@@ -165,7 +165,7 @@ class RoomCameraRepository(
         val username = credentialCipher.decrypt(entity.usernameCipherText)
         val password = credentialCipher.decrypt(entity.passwordCipherText)
         val source = when (CameraSourceType.valueOf(entity.sourceType)) {
-            CameraSourceType.INTELBRAS_DVR_CHANNEL -> IntelbrasDvrChannel(
+            CameraSourceType.INTELBRAS_DVR_CHANNEL -> DvrRtspChannel(
                 channel = entity.intelbrasChannel ?: 1,
                 subtype = 0,
             )

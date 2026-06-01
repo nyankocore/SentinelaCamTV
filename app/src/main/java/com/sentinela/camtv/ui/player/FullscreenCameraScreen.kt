@@ -19,7 +19,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
-import com.sentinela.camtv.player.IntelbrasRtspUrlBuilder
+import com.sentinela.camtv.player.DvrRtspUrlBuilder
 import com.sentinela.camtv.ui.common.QuickMenu
 import com.sentinela.camtv.ui.common.QuickMenuAction
 import com.sentinela.camtv.ui.design.SentinelaOverlayCard
@@ -33,7 +33,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun FullscreenCameraScreen(
     state: FullscreenPlayerUiState,
-    rtspUrlBuilder: IntelbrasRtspUrlBuilder,
+    rtspUrlBuilder: DvrRtspUrlBuilder,
     onExit: () -> Unit,
     onShowQuickMenu: () -> Unit,
     onDismissQuickMenu: () -> Unit,

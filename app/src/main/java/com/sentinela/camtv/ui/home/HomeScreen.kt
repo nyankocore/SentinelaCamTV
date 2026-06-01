@@ -48,6 +48,8 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.sentinela.camtv.BuildConfig
 import com.sentinela.camtv.R
+import com.sentinela.camtv.config.ProjectLinks
+import com.sentinela.camtv.ui.common.AppInfoFooter
 import com.sentinela.camtv.ui.design.SentinelaTvColors
 
 @Composable
@@ -154,7 +156,10 @@ fun HomeScreen(
                 )
             }
 
-            HomeFooter(
+            AppInfoFooter(
+                versionName = BuildConfig.VERSION_NAME,
+                license = "GPL-3.0-or-later",
+                siteLabel = ProjectLinks.SITE_LABEL,
                 scale = scale,
                 modifier = Modifier.offset(x = 82f.sdp(scale), y = 598f.sdp(scale)),
             )
@@ -203,32 +208,6 @@ private fun HomeActionButton(
             fontWeight = FontWeight.Bold,
         )
     }
-}
-
-@Composable
-private fun HomeFooter(
-    scale: Float,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier) {
-        FooterText("Versão: ${BuildConfig.VERSION_NAME}", scale)
-        Spacer(Modifier.height(8f.sdp(scale)))
-        FooterText("Licença: GPL-3.0-or-later", scale)
-        Spacer(Modifier.height(8f.sdp(scale)))
-        FooterText("Site: github.com/d3funto/SentinelaCamTV", scale)
-    }
-}
-
-@Composable
-private fun FooterText(
-    text: String,
-    scale: Float,
-) {
-    Text(
-        text = text,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        fontSize = 15f.ssp(scale),
-    )
 }
 
 @Composable

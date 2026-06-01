@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -23,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +51,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.sentinela.camtv.ui.common.AppInfoFooter
 import com.sentinela.camtv.ui.design.SentinelaTvColors
+import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
@@ -138,21 +142,21 @@ fun SettingsScreen(
             }
 
             state.exportMessage?.let { message ->
-                SupportInfoCard(
+                SupportMessageCard(
                     text = message,
                     scale = scale,
                     modifier = Modifier
-                        .offset(x = 560f.sdp(scale), y = 190f.sdp(scale))
-                        .size(width = 520f.sdp(scale), height = 118f.sdp(scale)),
+                        .offset(x = 585f.sdp(scale), y = 190f.sdp(scale))
+                        .size(width = 575f.sdp(scale), height = 268f.sdp(scale)),
                 )
             }
 
-            SupportInfoCard(
-                text = "Versão: ${state.versionName}\nLicença: ${state.license}\nSite: ${state.siteUrl.removePrefix("https://")}",
+            AppInfoFooter(
+                versionName = state.versionName,
+                license = state.license,
+                siteLabel = state.siteUrl.removePrefix("https://"),
                 scale = scale,
-                modifier = Modifier
-                    .offset(x = 78f.sdp(scale), y = 568f.sdp(scale))
-                    .size(width = 520f.sdp(scale), height = 92f.sdp(scale)),
+                modifier = Modifier.offset(x = 82f.sdp(scale), y = 580f.sdp(scale)),
             )
         }
 
@@ -177,6 +181,9 @@ private fun UpdateStatusDialog(
     onDismiss: () -> Unit,
 ) {
     val primaryFocusRequester = remember { FocusRequester() }
+    val changelogScrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+    var changelogFocused by remember { mutableStateOf(false) }
     val title = when {
         state.checkingForUpdate -> "Buscando atualização..."
         state.downloadingUpdate -> "Baixando atualização..."
@@ -238,7 +245,51 @@ private fun UpdateStatusDialog(
                 modifier = Modifier
                     .offset(x = 44f.sdp(scale), y = 134f.sdp(scale))
                     .size(width = 692f.sdp(scale), height = 188f.sdp(scale))
-                    .verticalScroll(rememberScrollState()),
+                    .border(
+                        width = if (changelogFocused) 2f.sdp(scale) else 1.dp,
+                        color = if (changelogFocused) {
+                            SentinelaTvColors.controlFocused
+                        } else {
+                            SentinelaTvColors.panelBorder
+                        },
+                        shape = RoundedCornerShape(10f.sdp(scale)),
+                    )
+                    .onFocusChanged { changelogFocused = it.isFocused }
+                    .onPreviewKeyEvent { event ->
+                        if (event.type != KeyEventType.KeyDown) {
+                            return@onPreviewKeyEvent false
+                        }
+                        val step = (70f * scale).toInt().coerceAtLeast(1)
+                        when (event.key) {
+                            Key.DirectionDown -> {
+                                if (changelogScrollState.value >= changelogScrollState.maxValue) {
+                                    return@onPreviewKeyEvent false
+                                }
+                                coroutineScope.launch {
+                                    changelogScrollState.scrollTo(
+                                        (changelogScrollState.value + step)
+                                            .coerceAtMost(changelogScrollState.maxValue),
+                                    )
+                                }
+                                true
+                            }
+                            Key.DirectionUp -> {
+                                if (changelogScrollState.value <= 0) {
+                                    return@onPreviewKeyEvent false
+                                }
+                                coroutineScope.launch {
+                                    changelogScrollState.scrollTo(
+                                        (changelogScrollState.value - step).coerceAtLeast(0),
+                                    )
+                                }
+                                true
+                            }
+                            else -> false
+                        }
+                    }
+                    .focusable()
+                    .verticalScroll(changelogScrollState)
+                    .padding(horizontal = 12f.sdp(scale), vertical = 10f.sdp(scale)),
             ) {
                 Text(
                     text = message,
@@ -299,7 +350,7 @@ private fun UpdateStatusDialog(
 }
 
 @Composable
-private fun SupportInfoCard(
+private fun SupportMessageCard(
     text: String,
     scale: Float,
     modifier: Modifier = Modifier,
@@ -312,12 +363,16 @@ private fun SupportInfoCard(
             ),
         contentAlignment = Alignment.CenterStart,
     ) {
+        val scrollState = rememberScrollState()
         Text(
             text = text,
-            modifier = Modifier.offset(x = 24f.sdp(scale)),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24f.sdp(scale), vertical = 16f.sdp(scale))
+                .verticalScroll(scrollState),
             color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 17f.ssp(scale),
-            lineHeight = 26f.ssp(scale),
+            fontSize = 16f.ssp(scale),
+            lineHeight = 24f.ssp(scale),
         )
     }
 }

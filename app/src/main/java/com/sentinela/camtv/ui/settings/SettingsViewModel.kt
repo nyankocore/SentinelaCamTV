@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sentinela.camtv.BuildConfig
+import com.sentinela.camtv.config.ProjectLinks
 import com.sentinela.camtv.data.update.AppUpdateInstallResult
 import com.sentinela.camtv.data.update.AppUpdateInstaller
 import com.sentinela.camtv.data.update.AvailableUpdate
@@ -29,7 +30,7 @@ data class SettingsUiState(
     val downloadedUpdate: DownloadedUpdate? = null,
     val versionName: String = BuildConfig.VERSION_NAME,
     val license: String = "GPL-3.0-or-later",
-    val siteUrl: String = "https://github.com/d3funto/SentinelaCamTV",
+    val siteUrl: String = ProjectLinks.SITE_URL,
 )
 
 class SettingsViewModel(
@@ -183,7 +184,7 @@ class SettingsViewModel(
             exportMessage.value = "Exportando..."
             exportMessage.value = block()
                 .fold(
-                    onSuccess = { file -> "Arquivo gerado: ${file.absolutePath}" },
+                    onSuccess = SupportExportMessage::forExportedFile,
                     onFailure = { error -> "Falha ao exportar: ${error.message ?: "erro desconhecido"}" },
                 )
         }

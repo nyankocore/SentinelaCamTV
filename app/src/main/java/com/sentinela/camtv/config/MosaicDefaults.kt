@@ -1,7 +1,7 @@
 package com.sentinela.camtv.config
 
 import com.sentinela.camtv.domain.Camera
-import com.sentinela.camtv.domain.IntelbrasDvrChannel
+import com.sentinela.camtv.domain.DvrRtspChannel
 
 const val MOSAIC_SUBTYPE = 1
 const val FULLSCREEN_SUBTYPE = 0
@@ -12,7 +12,7 @@ fun defaultMosaicCameras(): List<Camera> = (1..5).map { channel ->
     Camera(
         id = "cam-$channel",
         name = "CAM$channel",
-        source = IntelbrasDvrChannel(
+        source = DvrRtspChannel(
             channel = channel,
             subtype = MOSAIC_SUBTYPE,
         ),

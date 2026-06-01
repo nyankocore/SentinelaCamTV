@@ -53,7 +53,7 @@ object SentinelaTvSpacing {
     val screenHorizontal: Dp = 56.dp
     val screenVertical: Dp = 40.dp
     val mosaicOuter: Dp = 16.dp
-    val mosaicTileGap: Dp = 4.dp
+    val mosaicTileGap: Dp = 2.dp
 }
 
 object SentinelaTvSize {

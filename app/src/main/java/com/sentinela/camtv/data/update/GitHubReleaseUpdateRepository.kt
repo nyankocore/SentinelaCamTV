@@ -1,6 +1,7 @@
 package com.sentinela.camtv.data.update
 
 import android.content.Context
+import com.sentinela.camtv.config.ProjectLinks
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -175,8 +176,7 @@ class GitHubReleaseUpdateRepository(
     }
 
     private companion object {
-        private const val DEFAULT_LATEST_RELEASE_URL =
-            "https://api.github.com/repos/d3funto/SentinelaCamTV/releases/latest"
+        private const val DEFAULT_LATEST_RELEASE_URL = ProjectLinks.GITHUB_LATEST_RELEASE_API_URL
         private const val NETWORK_TIMEOUT_MS = 15_000
     }
 }

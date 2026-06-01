@@ -13,11 +13,11 @@ class OnvifDeviceLabelTest {
             xAddrs = listOf("http://192.168.1.50/onvif/device_service"),
             scopes = listOf(
                 "onvif://www.onvif.org/location/country/China",
-                "onvif://www.onvif.org/name/iC3LOW",
+                "onvif://www.onvif.org/name/CameraTeste",
             ),
         )
 
-        assertEquals("iC3LOW", device.displayLabel())
+        assertEquals("CameraTeste", device.displayLabel())
     }
 
     @Test
@@ -26,9 +26,9 @@ class OnvifDeviceLabelTest {
             endpointReference = "urn:uuid:test",
             types = emptyList(),
             xAddrs = listOf("http://192.168.1.50/onvif/device_service"),
-            scopes = listOf("onvif://www.onvif.org/hardware/MHDX1004"),
+            scopes = listOf("onvif://www.onvif.org/hardware/DVRTESTE"),
         )
 
-        assertEquals("MHDX1004", device.displayLabel())
+        assertEquals("DVRTESTE", device.displayLabel())
     }
 }

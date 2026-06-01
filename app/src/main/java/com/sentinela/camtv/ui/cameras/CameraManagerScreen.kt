@@ -57,7 +57,7 @@ import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.sentinela.camtv.domain.Camera
-import com.sentinela.camtv.domain.IntelbrasDvrChannel
+import com.sentinela.camtv.domain.DvrRtspChannel
 import com.sentinela.camtv.domain.OnvifCameraSource
 import com.sentinela.camtv.domain.RtspCameraSource
 import com.sentinela.camtv.ui.common.SentinelaScreen
@@ -709,7 +709,7 @@ private fun ConnectedTab(
             Spacer(Modifier.height(metrics.dp(34f)))
             SectionHeading("Resumo", metrics)
             Spacer(Modifier.height(metrics.dp(14f)))
-            PanelText("ONVIF: ${state.cameras.count { it.source is OnvifCameraSource || it.source is IntelbrasDvrChannel }}", metrics)
+            PanelText("ONVIF: ${state.cameras.count { it.source is OnvifCameraSource || it.source is DvrRtspChannel }}", metrics)
             Spacer(Modifier.height(metrics.dp(12f)))
             PanelText("RTSP direto: ${state.cameras.count { it.source is RtspCameraSource }}", metrics)
             Spacer(Modifier.height(metrics.dp(88f)))
@@ -1415,7 +1415,7 @@ private fun Camera.connectedSubtitle(): String =
 
 private fun Any.connectedLabel(): String =
     when (this) {
-        is IntelbrasDvrChannel -> "ONVIF"
+        is DvrRtspChannel -> "ONVIF"
         is OnvifCameraSource -> "ONVIF"
         is RtspCameraSource -> "RTSP direto"
         else -> "Câmera"
@@ -1423,7 +1423,7 @@ private fun Any.connectedLabel(): String =
 
 private fun Camera.streamLabel(): String =
     when (source) {
-        is IntelbrasDvrChannel -> "stream principal e secundário"
+        is DvrRtspChannel -> "stream principal e secundário"
         is OnvifCameraSource -> if (source.subRtspUrl.isNullOrBlank()) {
             "stream principal"
         } else {

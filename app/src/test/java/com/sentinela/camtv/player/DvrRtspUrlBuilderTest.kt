@@ -2,25 +2,25 @@ package com.sentinela.camtv.player
 
 import com.sentinela.camtv.config.DvrConnectionConfig
 import com.sentinela.camtv.domain.Camera
-import com.sentinela.camtv.domain.IntelbrasDvrChannel
+import com.sentinela.camtv.domain.DvrRtspChannel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class IntelbrasRtspUrlBuilderTest {
+class DvrRtspUrlBuilderTest {
     @Test
-    fun buildsMhdxRtspUrlFromProvidedDvrConfig() {
+    fun buildsRtspUrlFromProvidedDvrConfig() {
         val config = DvrConnectionConfig(
             host = "203.0.113.10",
             username = "viewer",
             password = "test-pass",
             rtspPort = 8554,
         )
-        val source = IntelbrasDvrChannel(
+        val source = DvrRtspChannel(
             channel = 5,
             subtype = 1,
         )
 
-        val url = IntelbrasRtspUrlBuilder(config).build(source)
+        val url = DvrRtspUrlBuilder(config).build(source)
 
         assertEquals(
             "rtsp://" + "viewer:test-pass@" + "203.0.113.10:8554/cam/realmonitor" +
@@ -38,7 +38,7 @@ class IntelbrasRtspUrlBuilderTest {
             rtspPort = 554,
         )
 
-        val url = buildIntelbrasRtspUrl(
+        val url = buildDvrRtspUrl(
             dvrConfig = config,
             channel = 1,
             subtype = 0,
@@ -62,14 +62,14 @@ class IntelbrasRtspUrlBuilderTest {
         val camera = Camera(
             id = "cam-5",
             name = "CAM5",
-            source = IntelbrasDvrChannel(
+            source = DvrRtspChannel(
                 channel = 5,
                 subtype = 1,
             ),
         )
         val request = camera.streamRequestFor(PlayerMode.Fullscreen)
 
-        val url = IntelbrasRtspUrlBuilder(config).build(request)
+        val url = DvrRtspUrlBuilder(config).build(request)
 
         assertEquals(
             "rtsp://" + "viewer:test-pass@" + "203.0.113.30:554/cam/realmonitor" +

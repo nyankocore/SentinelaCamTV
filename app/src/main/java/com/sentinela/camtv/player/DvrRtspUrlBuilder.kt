@@ -1,23 +1,23 @@
 package com.sentinela.camtv.player
 
 import com.sentinela.camtv.config.DvrConnectionConfig
-import com.sentinela.camtv.domain.IntelbrasDvrChannel
+import com.sentinela.camtv.domain.DvrRtspChannel
 import com.sentinela.camtv.domain.OnvifCameraSource
 import com.sentinela.camtv.domain.RtspCameraSource
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
-class IntelbrasRtspUrlBuilder(
+class DvrRtspUrlBuilder(
     private val dvrConfig: DvrConnectionConfig,
 ) {
-    fun build(source: IntelbrasDvrChannel): String = buildIntelbrasRtspUrl(
+    fun build(source: DvrRtspChannel): String = buildDvrRtspUrl(
         dvrConfig = dvrConfig,
         source = source,
     )
 
     fun build(request: CameraStreamRequest): String {
         return when (val source = request.camera.source) {
-            is IntelbrasDvrChannel -> buildIntelbrasRtspUrl(
+            is DvrRtspChannel -> buildDvrRtspUrl(
                 dvrConfig = dvrConfig,
                 channel = source.channel,
                 subtype = request.subtype,
@@ -35,16 +35,16 @@ private fun OnvifCameraSource.urlForSubtype(subtype: Int): String =
 private fun RtspCameraSource.urlForSubtype(subtype: Int): String =
     if (subtype == 0 || subRtspUrl.isNullOrBlank()) mainRtspUrl else subRtspUrl
 
-fun buildIntelbrasRtspUrl(
+fun buildDvrRtspUrl(
     dvrConfig: DvrConnectionConfig,
-    source: IntelbrasDvrChannel,
-): String = buildIntelbrasRtspUrl(
+    source: DvrRtspChannel,
+): String = buildDvrRtspUrl(
     dvrConfig = dvrConfig,
     channel = source.channel,
     subtype = source.subtype,
 )
 
-fun buildIntelbrasRtspUrl(
+fun buildDvrRtspUrl(
     dvrConfig: DvrConnectionConfig,
     channel: Int,
     subtype: Int,
