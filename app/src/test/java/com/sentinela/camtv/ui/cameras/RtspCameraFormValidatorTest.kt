@@ -35,7 +35,7 @@ class RtspCameraFormValidatorTest {
     fun rejectsIncompleteMainRtspUrlWithoutHost() {
         val validation = RtspCameraFormValidator.validate(
             name = "DVR",
-            mainRtspUrl = "rtsp://192.168.100",
+            mainRtspUrl = "rtsp://198.51.100",
             subRtspUrl = "",
             username = "",
             password = "",
@@ -52,7 +52,7 @@ class RtspCameraFormValidatorTest {
         val validation = RtspCameraFormValidator.validate(
             name = "DVR",
             mainRtspUrl = "rtsp://198.51.100.10/live",
-            subRtspUrl = "rtsp://192.168.100",
+            subRtspUrl = "rtsp://198.51.100",
             username = "",
             password = "",
         )

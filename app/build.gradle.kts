@@ -51,8 +51,8 @@ android {
         applicationId = "com.sentinela.camtv"
         minSdk = 23
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.2.0"
+        versionCode = 5
+        versionName = "1.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
