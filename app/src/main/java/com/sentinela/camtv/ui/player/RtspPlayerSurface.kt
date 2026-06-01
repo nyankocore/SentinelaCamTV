@@ -70,6 +70,7 @@ fun RtspPlayerSurface(
     autoQualityDowngraded: Boolean = false,
     onSoftwareDecoderInMosaicHd: (cameraId: String, decoderName: String) -> Unit = { _, _ -> },
     onDecoderFailureInMosaicHd: (cameraId: String, reason: String) -> Unit = { _, _ -> },
+    onVideoAspectRatioChanged: (cameraId: String, subtype: Int, width: Int, height: Int) -> Unit = { _, _, _, _ -> },
 ) {
     var connectionState by remember(rtspUrl, request.subtype, request.audioMode, request.transmissionMode) {
         mutableStateOf<PlayerConnectionState>(PlayerConnectionState.Connecting)
@@ -93,6 +94,7 @@ fun RtspPlayerSurface(
     var lastWatchdogReason by remember(rtspUrl, request.subtype, request.transmissionMode) { mutableStateOf<String?>(null) }
     var lastError by remember(rtspUrl, request.subtype, request.transmissionMode) { mutableStateOf<String?>(null) }
     var softwareDecoderReported by remember(rtspUrl, request.subtype, request.mode) { mutableStateOf(false) }
+    var reportedVideoSize by remember(rtspUrl, request.subtype) { mutableStateOf<Pair<Int, Int>?>(null) }
     var decoderFallbackEnabled by remember(
         rtspUrl,
         request.subtype,
@@ -215,6 +217,20 @@ fun RtspPlayerSurface(
         lastError = null
         lastReconnectReason = null
         lastWatchdogReason = null
+    }
+
+    fun reportVideoSize(
+        width: Int,
+        height: Int,
+    ) {
+        if (width <= 0 || height <= 0) return
+
+        videoInfo = "${width}x$height"
+        val nextSize = width to height
+        if (reportedVideoSize != nextSize) {
+            reportedVideoSize = nextSize
+            onVideoAspectRatioChanged(request.camera.id, request.subtype, width, height)
+        }
     }
 
     LaunchedEffect(reconnectToken) {
@@ -399,9 +415,7 @@ fun RtspPlayerSurface(
                 }
 
                 override fun onVideoSizeChanged(videoSize: VideoSize) {
-                    if (videoSize.width > 0 && videoSize.height > 0) {
-                        videoInfo = "${videoSize.width}x${videoSize.height}"
-                    }
+                    reportVideoSize(videoSize.width, videoSize.height)
                 }
             }
 
@@ -445,9 +459,7 @@ fun RtspPlayerSurface(
                         videoCodecs = format.codecs
                         videoFrameRate = format.frameRate.takeIf { it > 0f }
                     }
-                    if (format.width > 0 && format.height > 0) {
-                        videoInfo = "${format.width}x${format.height}"
-                    }
+                    reportVideoSize(format.width, format.height)
                 }
 
                 override fun onDroppedVideoFrames(

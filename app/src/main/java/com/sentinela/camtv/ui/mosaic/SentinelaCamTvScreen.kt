@@ -2,14 +2,12 @@ package com.sentinela.camtv.ui.mosaic
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,9 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -32,10 +27,8 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.sentinela.camtv.config.APP_PADDING_DP
 import com.sentinela.camtv.config.AppDvrConfig
 import com.sentinela.camtv.config.DvrConnectionConfig
-import com.sentinela.camtv.config.TILE_GAP_DP
 import com.sentinela.camtv.config.isConfigured
 import com.sentinela.camtv.domain.Camera
 import com.sentinela.camtv.domain.IntelbrasDvrChannel
@@ -47,6 +40,7 @@ import com.sentinela.camtv.ui.common.QuickMenuAction
 import com.sentinela.camtv.ui.design.SentinelaOverlayCard
 import com.sentinela.camtv.ui.design.SentinelaTvColors
 import com.sentinela.camtv.ui.design.SentinelaTvDialog
+import com.sentinela.camtv.ui.design.SentinelaTvSpacing
 import com.sentinela.camtv.ui.labels.infoMenuLabel
 import com.sentinela.camtv.ui.labels.streamQualityLabel
 import com.sentinela.camtv.ui.labels.transmissionModeMenuLabel
@@ -73,6 +67,7 @@ fun MosaicScreen(
     }
     var showCameraFocusIndicator by remember { mutableStateOf(true) }
     var focusActivityToken by remember { mutableIntStateOf(0) }
+    var videoAspectRatios by remember { mutableStateOf<Map<MosaicAspectRatioKey, Float>>(emptyMap()) }
 
     BackHandler {
         if (shouldReturnHomeOnMosaicBack(state)) {
@@ -87,6 +82,11 @@ fun MosaicScreen(
             delay(CAMERA_FOCUS_HIDE_DELAY_MS)
             showCameraFocusIndicator = false
         }
+    }
+
+    LaunchedEffect(state.cameras) {
+        val activeCameraIds = state.cameras.mapTo(mutableSetOf()) { it.id }
+        videoAspectRatios = videoAspectRatios.filterKeys { key -> key.cameraId in activeCameraIds }
     }
 
     val fullscreenCamera = state.fullscreenCamera
@@ -159,6 +159,16 @@ fun MosaicScreen(
             onCameraLongClick = mosaicViewModel::requestCameraDeletion,
             onMosaicHdSoftwareDecoder = mosaicViewModel::fallbackCameraToSdFromSoftwareDecoder,
             onMosaicHdDecoderFailure = mosaicViewModel::reportMosaicHdDecoderFailure,
+            onVideoAspectRatioChanged = { cameraId, subtype, width, height ->
+                val aspectRatio = MosaicLayoutPolicy.validatedAspectRatio(width, height)
+                if (aspectRatio != null) {
+                    val key = MosaicAspectRatioKey(cameraId, subtype)
+                    if (videoAspectRatios[key] != aspectRatio) {
+                        videoAspectRatios = videoAspectRatios + (key to aspectRatio)
+                    }
+                }
+            },
+            videoAspectRatios = videoAspectRatios,
             tilesFocusable = !state.quickMenuVisible && state.cameraPendingDeletion == null,
             showFocusIndicator = showCameraFocusIndicator || state.reorderMode,
             modifier = Modifier.fillMaxSize(),
@@ -223,61 +233,43 @@ private fun MosaicGrid(
     onCameraLongClick: (Camera) -> Unit,
     onMosaicHdSoftwareDecoder: (cameraId: String, reason: String) -> Unit,
     onMosaicHdDecoderFailure: (cameraId: String, reason: String) -> Unit,
+    onVideoAspectRatioChanged: (cameraId: String, subtype: Int, width: Int, height: Int) -> Unit,
+    videoAspectRatios: Map<MosaicAspectRatioKey, Float>,
     tilesFocusable: Boolean,
     showFocusIndicator: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val rows = remember(state.cameras) { state.cameras.mosaicRows() }
-    Column(
-        modifier = modifier.padding(APP_PADDING_DP.dp),
-        verticalArrangement = Arrangement.spacedBy(TILE_GAP_DP.dp),
+    BoxWithConstraints(
+        modifier = modifier.padding(SentinelaTvSpacing.mosaicOuter),
     ) {
-        rows.forEachIndexed { index, rowCameras ->
-            MosaicCameraRow(
-                cameras = rowCameras,
-                state = state,
-                rtspUrlBuilder = rtspUrlBuilder,
-                onCameraClick = onCameraClick,
-                onCameraLongClick = onCameraLongClick,
-                onMosaicHdSoftwareDecoder = onMosaicHdSoftwareDecoder,
-                onMosaicHdDecoderFailure = onMosaicHdDecoderFailure,
-                tilesFocusable = tilesFocusable,
-                showFocusIndicator = showFocusIndicator,
-                rowWeight = if (state.cameras.size <= 5 && index == 1) 1.15f else 1f,
+        val aspectRatios = state.cameras.map { camera ->
+            val effectiveQuality = state.effectiveStreamQuality(camera.id)
+            MosaicLayoutPolicy.aspectRatioFor(
+                cameraId = camera.id,
+                subtype = effectiveQuality.subtype,
+                streamQuality = effectiveQuality,
+                aspectRatios = videoAspectRatios,
             )
         }
-    }
-}
+        val layout = remember(
+            state.cameras,
+            state.streamQuality,
+            state.autoQualityOverrides,
+            videoAspectRatios,
+            maxWidth,
+            maxHeight,
+        ) {
+            MosaicLayoutPolicy.calculate(
+                cameraCount = state.cameras.size,
+                availableWidth = maxWidth.value,
+                availableHeight = maxHeight.value,
+                gap = SentinelaTvSpacing.mosaicTileGap.value,
+                aspectRatios = aspectRatios,
+            )
+        }
 
-private fun List<Camera>.mosaicRows(): List<List<Camera>> =
-    if (size <= 5) {
-        listOf(take(3), drop(3)).filter { row -> row.isNotEmpty() }
-    } else {
-        chunked(4)
-    }
-
-@Composable
-private fun ColumnScope.MosaicCameraRow(
-    cameras: List<Camera>,
-    state: MosaicUiState,
-    rtspUrlBuilder: IntelbrasRtspUrlBuilder,
-    onCameraClick: (Camera) -> Unit,
-    onCameraLongClick: (Camera) -> Unit,
-    onMosaicHdSoftwareDecoder: (cameraId: String, reason: String) -> Unit,
-    onMosaicHdDecoderFailure: (cameraId: String, reason: String) -> Unit,
-    tilesFocusable: Boolean,
-    showFocusIndicator: Boolean,
-    rowWeight: Float,
-) {
-    if (cameras.isEmpty()) return
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .weight(rowWeight),
-        horizontalArrangement = Arrangement.spacedBy(TILE_GAP_DP.dp),
-    ) {
-        cameras.forEach { camera ->
+        layout.tiles.forEach { tile ->
+            val camera = state.cameras.getOrNull(tile.index) ?: return@forEach
             key(camera.id) {
                 val effectiveQuality = state.effectiveStreamQuality(camera.id)
                 val autoQualityDowngraded = state.isAutoQualityDowngraded(camera.id)
@@ -302,6 +294,7 @@ private fun ColumnScope.MosaicCameraRow(
                     showFocusIndicator = showFocusIndicator,
                     onMosaicHdSoftwareDecoder = onMosaicHdSoftwareDecoder,
                     onMosaicHdDecoderFailure = onMosaicHdDecoderFailure,
+                    onVideoAspectRatioChanged = onVideoAspectRatioChanged,
                     onClick = {
                         onCameraClick(camera)
                     },
@@ -311,8 +304,8 @@ private fun ColumnScope.MosaicCameraRow(
                         null
                     },
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxSize(),
+                        .offset(x = tile.x.dp, y = tile.y.dp)
+                        .size(width = tile.width.dp, height = tile.height.dp),
                 )
             }
         }

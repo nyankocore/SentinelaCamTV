@@ -8,9 +8,6 @@ const val FULLSCREEN_SUBTYPE = 0
 
 const val SHOW_APP_HEADER = false
 
-const val APP_PADDING_DP = 16
-const val TILE_GAP_DP = 8
-
 fun defaultMosaicCameras(): List<Camera> = (1..5).map { channel ->
     Camera(
         id = "cam-$channel",

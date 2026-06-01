@@ -55,6 +55,7 @@ fun RtspCameraTile(
     showFocusIndicator: Boolean,
     onMosaicHdSoftwareDecoder: (cameraId: String, reason: String) -> Unit,
     onMosaicHdDecoderFailure: (cameraId: String, reason: String) -> Unit,
+    onVideoAspectRatioChanged: (cameraId: String, subtype: Int, width: Int, height: Int) -> Unit,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
@@ -197,6 +198,7 @@ fun RtspCameraTile(
             autoQualityDowngraded = autoQualityDowngraded,
             onSoftwareDecoderInMosaicHd = onMosaicHdSoftwareDecoder,
             onDecoderFailureInMosaicHd = onMosaicHdDecoderFailure,
+            onVideoAspectRatioChanged = onVideoAspectRatioChanged,
             modifier = Modifier.fillMaxSize(),
         )
 
