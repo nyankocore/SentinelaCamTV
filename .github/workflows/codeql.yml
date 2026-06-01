@@ -52,7 +52,7 @@ jobs:
 
       - name: Build for CodeQL
         shell: bash
-        run: ./gradlew --no-daemon --max-workers=1 -Dorg.gradle.java.home="$JAVA_HOME" :app:assembleDebug
+        run: ./gradlew --no-daemon --max-workers=1 --no-build-cache --rerun-tasks -Dorg.gradle.java.home="$JAVA_HOME" :app:assembleDebug
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
