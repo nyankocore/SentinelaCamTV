@@ -24,3 +24,4 @@ artifacts/
 *.keystore
 keystore.properties
 signing.properties
+google-services.json

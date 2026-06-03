@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sentinela.camtv.data.camera.CameraRepository
 import com.sentinela.camtv.domain.Camera
+import com.sentinela.camtv.entitlement.EntitlementRepository
+import com.sentinela.camtv.entitlement.EntitlementState
+import com.sentinela.camtv.entitlement.FreeCameraAccessPolicy
 import com.sentinela.camtv.player.StreamQuality
 import com.sentinela.camtv.player.TransmissionMode
 import com.sentinela.camtv.player.next
@@ -21,7 +24,10 @@ import timber.log.Timber
 
 data class MosaicUiState(
     val cameras: List<Camera> = emptyList(),
+    val allCameraCount: Int = 0,
     val isLoading: Boolean = true,
+    val freeLimitActive: Boolean = false,
+    val freeActiveCameraId: String? = null,
     val showInfo: Boolean = true,
     val quickMenuVisible: Boolean = false,
     val reorderMode: Boolean = false,
@@ -33,6 +39,9 @@ data class MosaicUiState(
     val transmissionMode: TransmissionMode = TransmissionMode.MENOR_LATENCIA,
     val preferences: PlayerUiPreferences = PlayerUiPreferences(),
 ) {
+    val hiddenByFreeLimitCount: Int
+        get() = (allCameraCount - cameras.size).coerceAtLeast(0)
+
     fun effectiveStreamQuality(cameraId: String): StreamQuality =
         autoQualityOverrides[cameraId] ?: streamQuality
 
@@ -42,11 +51,18 @@ data class MosaicUiState(
 
 private data class MosaicCoreState(
     val cameras: List<Camera>,
+    val allCameraCount: Int,
     val isLoading: Boolean,
+    val entitlement: EntitlementState,
     val preferences: PlayerUiPreferences,
     val quickMenuVisible: Boolean,
     val reorderMode: Boolean,
     val selectedForSwapId: String?,
+)
+
+private data class CameraAccessState(
+    val cameraState: CameraListState,
+    val entitlement: EntitlementState,
 )
 
 private sealed interface CameraListState {
@@ -57,6 +73,7 @@ private sealed interface CameraListState {
 class MosaicViewModel(
     private val cameraRepository: CameraRepository,
     private val settingsRepository: SettingsRepository,
+    private val entitlementRepository: EntitlementRepository,
 ) : ViewModel() {
     private val quickMenuVisible = MutableStateFlow(false)
     private val reorderMode = MutableStateFlow(false)
@@ -69,20 +86,30 @@ class MosaicViewModel(
         .map<List<Camera>, CameraListState> { cameras -> CameraListState.Loaded(cameras) }
         .onStart { emit(CameraListState.Loading) }
 
-    private val coreState = combine(
+    private val cameraAccessState = combine(
         cameraListState,
+        entitlementRepository.observeEntitlement(),
+    ) { cameraState, entitlement ->
+        CameraAccessState(cameraState, entitlement)
+    }
+
+    private val coreState = combine(
+        cameraAccessState,
         settingsRepository.observePreferences(),
         quickMenuVisible,
         reorderMode,
         selectedForSwapId,
-    ) { cameraState, preferences, menuVisible, reorder, selectedId ->
-        val cameras = when (cameraState) {
+    ) { accessState, preferences, menuVisible, reorder, selectedId ->
+        val allCameras = when (val cameraState = accessState.cameraState) {
             is CameraListState.Loaded -> cameraState.cameras
             CameraListState.Loading -> emptyList()
         }
+        val cameras = allCameras.visibleFor(accessState.entitlement)
         MosaicCoreState(
             cameras = cameras,
-            isLoading = cameraState == CameraListState.Loading,
+            allCameraCount = allCameras.size,
+            isLoading = accessState.cameraState == CameraListState.Loading,
+            entitlement = accessState.entitlement,
             preferences = preferences,
             quickMenuVisible = menuVisible,
             reorderMode = reorder,
@@ -100,7 +127,10 @@ class MosaicViewModel(
         val validOverrides = qualityOverrides.filterKeys { it in validCameraIds }
         MosaicUiState(
             cameras = core.cameras,
+            allCameraCount = core.allCameraCount,
             isLoading = core.isLoading,
+            freeLimitActive = core.entitlement.freeLimitActive,
+            freeActiveCameraId = core.entitlement.freeActiveCameraId,
             showInfo = core.preferences.showMosaicInfo,
             quickMenuVisible = core.quickMenuVisible,
             reorderMode = core.reorderMode,
@@ -263,4 +293,12 @@ class MosaicViewModel(
             settingsRepository.setGlobalTransmissionMode(state.value.transmissionMode.next())
         }
     }
+}
+
+private fun List<Camera>.visibleFor(entitlement: EntitlementState): List<Camera> {
+    val visibleIds = FreeCameraAccessPolicy.visibleCameraIds(
+        cameraIds = map { it.id },
+        entitlement = entitlement,
+    ).toSet()
+    return filter { it.id in visibleIds }
 }

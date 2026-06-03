@@ -9,16 +9,16 @@ import org.junit.Test
 
 class PlayerUiPreferencesTest {
     @Test
-    fun showPlayerInfoDefaultsToTrue() {
-        assertTrue(PlayerUiPreferences().showPlayerInfo)
+    fun showPlayerInfoDefaultsToFalse() {
+        assertFalse(PlayerUiPreferences().showPlayerInfo)
     }
 
     @Test
-    fun mosaicAndFullscreenInfoDefaultToTrue() {
+    fun mosaicAndFullscreenInfoDefaultToFalse() {
         val preferences = PlayerUiPreferences()
 
-        assertTrue(preferences.showMosaicInfo)
-        assertTrue(preferences.showFullscreenInfo)
+        assertFalse(preferences.showMosaicInfo)
+        assertFalse(preferences.showFullscreenInfo)
     }
 
     @Test
@@ -34,5 +34,14 @@ class PlayerUiPreferencesTest {
     @Test
     fun mosaicStreamQualityDefaultsToSd() {
         assertEquals(StreamQuality.SD, PlayerUiPreferences().mosaicStreamQuality)
+    }
+
+    @Test
+    fun commercialPreferencesUseSafeDefaults() {
+        val preferences = PlayerUiPreferences()
+
+        assertTrue(preferences.diagnosticsEnabled)
+        assertEquals(null, preferences.freeActiveCameraId)
+        assertEquals(0L, preferences.premiumGraceUntilEpochMillis)
     }
 }

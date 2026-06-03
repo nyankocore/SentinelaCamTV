@@ -8,6 +8,13 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+val hasGoogleServices = file("google-services.json").isFile
+
+if (hasGoogleServices) {
+    apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
+}
+
 val sentinelaLocalProperties = Properties().apply {
     val localPropertiesFile = rootProject.file("local.properties")
     if (localPropertiesFile.isFile) {
@@ -30,7 +37,7 @@ val sentinelaDvrRtspPort = sentinelaLocalProperty(
 
 val releaseSigningPropertiesFile = File(
     System.getProperty("user.home"),
-    "Documents/SentinelaCamTV/release-signing/keystore.properties",
+    "Documents/SentinelaCamTV/play-signing/keystore.properties",
 )
 val releaseSigningProperties = Properties().apply {
     if (releaseSigningPropertiesFile.isFile) {
@@ -51,8 +58,8 @@ android {
         applicationId = "com.sentinela.camtv"
         minSdk = 23
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.3.0"
+        versionCode = 6
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -80,6 +87,16 @@ android {
             "boolean",
             "SEED_DEBUG_CAMERAS",
             "false",
+        )
+        buildConfigField(
+            "boolean",
+            "CRASHLYTICS_CONFIGURED",
+            hasGoogleServices.toString(),
+        )
+        buildConfigField(
+            "String",
+            "DEBUG_ENTITLEMENT",
+            buildConfigString("free"),
         )
     }
 
@@ -123,6 +140,11 @@ android {
                 "SEED_DEBUG_CAMERAS",
                 "true",
             )
+            buildConfigField(
+                "String",
+                "DEBUG_ENTITLEMENT",
+                buildConfigString(sentinelaLocalProperty("sentinela.debug.entitlement", "free")),
+            )
         }
         release {
             buildConfigField(
@@ -133,19 +155,12 @@ android {
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-        }
-    }
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-            isUniversalApk = true
         }
     }
     compileOptions {
@@ -185,6 +200,9 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.tv.foundation)
     implementation(libs.androidx.tv.material)
+    implementation(libs.billing.ktx)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.timber)
     ksp(libs.androidx.room.compiler)

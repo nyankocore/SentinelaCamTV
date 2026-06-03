@@ -12,4 +12,7 @@ interface SettingsRepository {
     suspend fun setFullscreenQuickMenuHintSeen(seen: Boolean)
     suspend fun setMosaicStreamQuality(streamQuality: StreamQuality)
     suspend fun setGlobalTransmissionMode(transmissionMode: TransmissionMode)
+    suspend fun setFreeActiveCameraId(cameraId: String?)
+    suspend fun setDiagnosticsEnabled(enabled: Boolean)
+    suspend fun setPremiumGraceUntilEpochMillis(epochMillis: Long)
 }

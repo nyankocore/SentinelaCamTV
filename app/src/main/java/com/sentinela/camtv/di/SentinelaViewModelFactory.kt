@@ -19,20 +19,21 @@ class SentinelaViewModelFactory(
         MosaicViewModel::class.java -> MosaicViewModel(
             cameraRepository = container.cameraRepository,
             settingsRepository = container.settingsRepository,
+            entitlementRepository = container.entitlementRepository,
         )
         FullscreenPlayerViewModel::class.java -> FullscreenPlayerViewModel(
             settingsRepository = container.settingsRepository,
         )
         CameraManagerViewModel::class.java -> CameraManagerViewModel(
             cameraRepository = container.cameraRepository,
+            entitlementRepository = container.entitlementRepository,
             onvifRepository = container.onvifRepository,
             rtspConnectionTester = container.rtspConnectionTester,
             rtspCameraDraftRepository = container.rtspCameraDraftRepository,
         )
         SettingsViewModel::class.java -> SettingsViewModel(
-            logRepository = container.logRepository,
-            updateRepository = container.updateRepository,
-            appUpdateInstaller = container.appUpdateInstaller,
+            entitlementRepository = container.entitlementRepository,
+            settingsRepository = container.settingsRepository,
         )
         else -> error("ViewModel sem factory manual: ${modelClass.name}")
     } as T

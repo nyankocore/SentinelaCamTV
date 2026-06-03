@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,7 +49,6 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.sentinela.camtv.BuildConfig
 import com.sentinela.camtv.R
-import com.sentinela.camtv.config.ProjectLinks
 import com.sentinela.camtv.ui.common.AppInfoFooter
 import com.sentinela.camtv.ui.design.SentinelaTvColors
 
@@ -94,7 +94,7 @@ fun HomeScreen(
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "Monitoramento local, privado e open-source.",
+                text = "Monitoramento local para Android TV e Google TV.",
                 modifier = Modifier.offset(x = 260f.sdp(scale), y = 124f.sdp(scale)),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 18f.ssp(scale),
@@ -140,8 +140,8 @@ fun HomeScreen(
 
             Box(
                 modifier = Modifier
-                    .offset(x = 520f.sdp(scale), y = 566f.sdp(scale))
-                    .size(width = 690f.sdp(scale), height = 76f.sdp(scale))
+                    .offset(x = 520f.sdp(scale), y = 552f.sdp(scale))
+                    .size(width = 690f.sdp(scale), height = 108f.sdp(scale))
                     .background(
                         color = SentinelaTvColors.panel,
                         shape = RoundedCornerShape(14f.sdp(scale)),
@@ -149,17 +149,16 @@ fun HomeScreen(
                 contentAlignment = Alignment.CenterStart,
             ) {
                 Text(
-                    text = "Privacidade por padrão. Sem anúncios, sem telemetria.",
-                    modifier = Modifier.offset(x = 24f.sdp(scale)),
+                    text = "No plano gratuito, visualize 1 câmera. Assine para liberar o mosaico completo e teste por 7 dias sem cobrança. Sua assinatura ajuda a manter o app. O Sentinela está em desenvolvimento ativo.",
+                    modifier = Modifier.padding(horizontal = 24f.sdp(scale)),
                     color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 18f.ssp(scale),
+                    fontSize = 16f.ssp(scale),
+                    lineHeight = 22f.ssp(scale),
                 )
             }
 
             AppInfoFooter(
                 versionName = BuildConfig.VERSION_NAME,
-                license = "GPL-3.0-or-later",
-                siteLabel = ProjectLinks.SITE_LABEL,
                 scale = scale,
                 modifier = Modifier.offset(x = 82f.sdp(scale), y = 598f.sdp(scale)),
             )

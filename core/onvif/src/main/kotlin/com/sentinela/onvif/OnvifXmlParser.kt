@@ -1,8 +1,8 @@
 package com.sentinela.onvif
 
 import java.io.StringReader
-import org.kxml2.io.KXmlParser
 import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
 
 object OnvifXmlParser {
     internal const val MAX_XML_BYTES = 512 * 1024
@@ -69,7 +69,7 @@ object OnvifXmlParser {
             "DOCTYPE não é permitido em XML ONVIF."
         }
 
-        val parser = KXmlParser().apply {
+        val parser = XmlPullParserFactory.newInstance().newPullParser().apply {
             setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true)
             setInput(StringReader(this@toXmlNode))
         }

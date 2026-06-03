@@ -1,18 +1,14 @@
 package com.sentinela.camtv.ui.settings
 
-import android.os.Build
+import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sentinela.camtv.BuildConfig
-import com.sentinela.camtv.config.ProjectLinks
-import com.sentinela.camtv.data.update.AppUpdateInstallResult
-import com.sentinela.camtv.data.update.AppUpdateInstaller
-import com.sentinela.camtv.data.update.AvailableUpdate
-import com.sentinela.camtv.data.update.DownloadedUpdate
-import com.sentinela.camtv.data.update.UpdateCheckResult
-import com.sentinela.camtv.data.update.UpdateRepository
-import com.sentinela.camtv.logging.LogRepository
-import java.io.File
+import com.sentinela.camtv.billing.BillingState
+import com.sentinela.camtv.billing.SubscriptionPlan
+import com.sentinela.camtv.billing.SubscriptionAccess
+import com.sentinela.camtv.entitlement.EntitlementRepository
+import com.sentinela.camtv.preferences.SettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,38 +17,35 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class SettingsUiState(
-    val exportMessage: String? = null,
-    val updateMessage: String? = null,
-    val showUpdateDialog: Boolean = false,
-    val checkingForUpdate: Boolean = false,
-    val downloadingUpdate: Boolean = false,
-    val availableUpdate: AvailableUpdate? = null,
-    val downloadedUpdate: DownloadedUpdate? = null,
+    val message: String? = null,
+    val billing: BillingState = BillingState(),
+    val diagnosticsEnabled: Boolean = true,
     val versionName: String = BuildConfig.VERSION_NAME,
-    val license: String = "GPL-3.0-or-later",
-    val siteUrl: String = ProjectLinks.SITE_URL,
-)
+) {
+    val accessLabel: String =
+        when (billing.access) {
+            SubscriptionAccess.Premium -> "Assinatura ativa"
+            SubscriptionAccess.Trial -> "Teste grátis ativo"
+            SubscriptionAccess.FreeLimited -> "Modo grátis: 1 câmera ativa"
+            SubscriptionAccess.BillingUnavailable -> "Google Play Billing indisponível"
+        }
+}
 
 class SettingsViewModel(
-    private val logRepository: LogRepository,
-    private val updateRepository: UpdateRepository,
-    private val appUpdateInstaller: AppUpdateInstaller,
+    private val entitlementRepository: EntitlementRepository,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
-    private val exportMessage = MutableStateFlow<String?>(null)
-    private val updateState = MutableStateFlow(UpdateUiState())
+    private val message = MutableStateFlow<String?>(null)
 
     val state: StateFlow<SettingsUiState> = combine(
-        exportMessage,
-        updateState,
-    ) { export, update ->
+        message,
+        entitlementRepository.observeEntitlement(),
+        settingsRepository.observePreferences(),
+    ) { currentMessage, entitlement, preferences ->
         SettingsUiState(
-            exportMessage = export,
-            updateMessage = update.message,
-            showUpdateDialog = update.showDialog,
-            checkingForUpdate = update.checking,
-            downloadingUpdate = update.downloading,
-            availableUpdate = update.availableUpdate,
-            downloadedUpdate = update.downloadedUpdate,
+            message = currentMessage ?: entitlement.billing.message,
+            billing = entitlement.billing,
+            diagnosticsEnabled = preferences.diagnosticsEnabled,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -60,194 +53,50 @@ class SettingsViewModel(
         initialValue = SettingsUiState(),
     )
 
-    fun exportSupportLogs() {
-        exportFile { logRepository.exportSupportLogs() }
+    fun subscribeMonthly(activity: Activity?) {
+        launchPurchase(activity, SubscriptionPlan.Monthly)
     }
 
-    fun exportCrashReport() {
-        exportFile { logRepository.exportCrashReport() }
+    fun subscribeAnnual(activity: Activity?) {
+        launchPurchase(activity, SubscriptionPlan.Annual)
     }
 
-    fun clearExportMessage() {
-        exportMessage.value = null
+    fun restoreSubscription() {
+        message.value = "Restaurando assinatura..."
+        entitlementRepository.refresh()
     }
 
-    fun checkForUpdate() {
-        if (updateState.value.checking || updateState.value.downloading) return
-
+    fun toggleDiagnostics() {
         viewModelScope.launch {
-            updateState.value = UpdateUiState(
-                checking = true,
-                showDialog = true,
-                message = "Buscando atualização...",
-            )
-            val result = updateRepository.checkForUpdate(
-                currentVersionName = BuildConfig.VERSION_NAME,
-                supportedAbis = Build.SUPPORTED_ABIS.toList(),
-            ).getOrElse { error ->
-                updateState.value = UpdateUiState(
-                    showDialog = true,
-                    message = "Falha ao buscar atualização: ${error.message ?: "erro desconhecido"}",
-                )
-                return@launch
-            }
-
-            updateState.value = when (result) {
-                is UpdateCheckResult.Available -> updateStateForAvailableUpdate(result.update)
-                UpdateCheckResult.UpToDate -> UpdateUiState(
-                    showDialog = true,
-                    message = "Você já está na versão mais recente.",
-                )
+            val nextEnabled = !state.value.diagnosticsEnabled
+            settingsRepository.setDiagnosticsEnabled(nextEnabled)
+            message.value = if (nextEnabled) {
+                "Diagnóstico automático ativado."
+            } else {
+                "Diagnóstico automático desativado."
             }
         }
     }
 
-    fun downloadUpdate() {
-        val update = updateState.value.availableUpdate ?: return
-        if (updateState.value.downloading) return
-
-        viewModelScope.launch {
-            updateState.value = updateState.value.copy(
-                downloading = true,
-                showDialog = true,
-                message = "Baixando atualização...",
-            )
-            updateRepository.downloadUpdate(update).fold(
-                onSuccess = { downloaded ->
-                    updateState.value = UpdateUiState(
-                        showDialog = true,
-                        message = "Atualização baixada. Abrindo instalador...",
-                        availableUpdate = update,
-                        downloadedUpdate = downloaded,
-                    )
-                    openInstaller(downloaded)
-                },
-                onFailure = { error ->
-                    updateState.value = updateState.value.copy(
-                        downloading = false,
-                        showDialog = true,
-                        message = "Falha ao baixar atualização: ${error.message ?: "erro desconhecido"}",
-                    )
-                },
-            )
-        }
+    fun clearMessage() {
+        message.value = null
     }
 
-    fun installDownloadedUpdate() {
-        val downloaded = updateState.value.downloadedUpdate ?: return
-        updateState.value = updateState.value.copy(showDialog = true)
-        openInstaller(downloaded)
-    }
-
-    fun retryInstallerAfterPermissionResume() {
-        val current = updateState.value
-        val downloaded = current.downloadedUpdate ?: return
-        if (!UpdateUiStateReducer.shouldRetryInstallerOnResume(
-                state = current,
-                canRequestPackageInstalls = appUpdateInstaller.canRequestPackageInstalls(),
-            )
-        ) {
+    private fun launchPurchase(activity: Activity?, plan: SubscriptionPlan) {
+        if (activity == null) {
+            message.value = "Não foi possível abrir a compra nesta tela."
             return
         }
-
-        updateState.value = current.copy(
-            showDialog = true,
-            message = "Permissão concedida. Abrindo instalador...",
-        )
-        openInstaller(downloaded)
-    }
-
-    fun dismissUpdateDialog() {
-        updateState.value = updateState.value.copy(showDialog = false)
-    }
-
-    private suspend fun updateStateForAvailableUpdate(update: AvailableUpdate): UpdateUiState {
-        val downloaded = updateRepository.findDownloadedUpdate(update).getOrNull()
-        return if (downloaded != null) {
-            UpdateUiState(
-                showDialog = true,
-                message = "Atualização já baixada.",
-                availableUpdate = update,
-                downloadedUpdate = downloaded,
-            )
-        } else {
-            UpdateUiState(
-                showDialog = true,
-                message = "Versão ${update.versionName} disponível.",
-                availableUpdate = update,
-            )
-        }
-    }
-
-    private fun exportFile(block: suspend () -> Result<File>) {
-        viewModelScope.launch {
-            exportMessage.value = "Exportando..."
-            exportMessage.value = block()
-                .fold(
-                    onSuccess = SupportExportMessage::forExportedFile,
-                    onFailure = { error -> "Falha ao exportar: ${error.message ?: "erro desconhecido"}" },
-                )
-        }
-    }
-
-    private fun openInstaller(downloaded: DownloadedUpdate) {
-        updateState.value = UpdateUiStateReducer.afterInstallResult(
-            current = updateState.value,
-            downloaded = downloaded,
-            result = appUpdateInstaller.openInstaller(downloaded),
+        val result = entitlementRepository.launchPurchase(activity, plan)
+        message.value = result.fold(
+            onSuccess = {
+                if (BuildConfig.DEBUG) {
+                    "Assinatura simulada no debug."
+                } else {
+                    "Abrindo compra no Google Play..."
+                }
+            },
+            onFailure = { error -> error.message ?: "Falha ao abrir compra." },
         )
     }
-}
-
-internal data class UpdateUiState(
-    val message: String? = null,
-    val showDialog: Boolean = false,
-    val checking: Boolean = false,
-    val downloading: Boolean = false,
-    val availableUpdate: AvailableUpdate? = null,
-    val downloadedUpdate: DownloadedUpdate? = null,
-    val waitingForInstallPermission: Boolean = false,
-)
-
-internal object UpdateUiStateReducer {
-    fun afterInstallResult(
-        current: UpdateUiState,
-        downloaded: DownloadedUpdate,
-        result: AppUpdateInstallResult,
-    ): UpdateUiState =
-        when (result) {
-            AppUpdateInstallResult.InstallerOpened -> current.copy(
-                downloading = false,
-                showDialog = true,
-                message = "Instalador aberto. Confirme a atualização no Android.",
-                downloadedUpdate = downloaded,
-                waitingForInstallPermission = false,
-            )
-
-            AppUpdateInstallResult.PermissionRequired -> current.copy(
-                downloading = false,
-                showDialog = true,
-                message = "Permissão necessária. Ative a instalação por este app e volte para continuar.",
-                downloadedUpdate = downloaded,
-                waitingForInstallPermission = true,
-            )
-
-            is AppUpdateInstallResult.Failed -> current.copy(
-                downloading = false,
-                showDialog = true,
-                message = result.message,
-                downloadedUpdate = downloaded,
-                waitingForInstallPermission = false,
-            )
-        }
-
-    fun shouldRetryInstallerOnResume(
-        state: UpdateUiState,
-        canRequestPackageInstalls: Boolean,
-    ): Boolean =
-        state.waitingForInstallPermission &&
-            state.downloadedUpdate != null &&
-            !state.checking &&
-            !state.downloading &&
-            canRequestPackageInstalls
 }

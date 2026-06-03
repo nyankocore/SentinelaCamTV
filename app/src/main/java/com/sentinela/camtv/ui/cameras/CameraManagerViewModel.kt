@@ -9,6 +9,7 @@ import com.sentinela.camtv.data.onvif.OnvifCameraProfileSelection
 import com.sentinela.camtv.data.onvif.OnvifProfileSelector
 import com.sentinela.camtv.data.onvif.ResolvedOnvifProfile
 import com.sentinela.camtv.domain.Camera
+import com.sentinela.camtv.entitlement.EntitlementRepository
 import com.sentinela.camtv.player.RtspConnectionTestResult
 import com.sentinela.camtv.player.RtspConnectionTester
 import com.sentinela.camtv.player.userMessage
@@ -38,6 +39,8 @@ data class CameraManagerUiState(
     val rtspConnecting: Boolean = false,
     val authDialogMessage: String? = null,
     val statusMessage: String? = null,
+    val freeLimitActive: Boolean = false,
+    val freeActiveCameraId: String? = null,
 ) {
     val selectedDevice: DiscoveredOnvifDevice?
         get() = discoveredDevices.firstOrNull { device -> device.stableKey() == selectedDeviceKey }
@@ -48,6 +51,7 @@ data class CameraManagerUiState(
 
 class CameraManagerViewModel(
     private val cameraRepository: CameraRepository,
+    private val entitlementRepository: EntitlementRepository,
     private val onvifRepository: OnvifRepository,
     private val rtspConnectionTester: RtspConnectionTester,
     private val rtspCameraDraftRepository: RtspCameraDraftRepository,
@@ -92,6 +96,7 @@ class CameraManagerViewModel(
         rtspConnecting,
         authDialogMessage,
         statusMessage,
+        entitlementRepository.observeEntitlement(),
     ) { values ->
         @Suppress("UNCHECKED_CAST")
         val cameras = values[0] as List<Camera>
@@ -113,6 +118,8 @@ class CameraManagerViewModel(
             rtspConnecting = values[12] as Boolean,
             authDialogMessage = values[13] as String?,
             statusMessage = values[14] as String?,
+            freeLimitActive = (values[15] as com.sentinela.camtv.entitlement.EntitlementState).freeLimitActive,
+            freeActiveCameraId = (values[15] as com.sentinela.camtv.entitlement.EntitlementState).freeActiveCameraId,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -178,6 +185,13 @@ class CameraManagerViewModel(
 
     fun copyRtspMainUrlToSubUrl() {
         rtspSubUrl.value = rtspMainUrl.value
+    }
+
+    fun setFreeActiveCamera(cameraId: String) {
+        viewModelScope.launch {
+            entitlementRepository.setFreeActiveCameraId(cameraId)
+            authDialogMessage.value = "Câmera ativa no modo grátis atualizada."
+        }
     }
 
     fun saveSelectedOnvifCamera() {

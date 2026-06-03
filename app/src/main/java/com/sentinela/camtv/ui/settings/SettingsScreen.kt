@@ -4,12 +4,14 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -18,13 +20,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,48 +44,47 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.sentinela.camtv.billing.BillingState
+import com.sentinela.camtv.billing.SubscriptionAccess
+import com.sentinela.camtv.billing.SubscriptionOffer
+import com.sentinela.camtv.billing.SubscriptionPlan
 import com.sentinela.camtv.ui.common.AppInfoFooter
 import com.sentinela.camtv.ui.design.SentinelaTvColors
-import kotlinx.coroutines.launch
+import com.sentinela.camtv.ui.design.SentinelaTvDialog
 
 @Composable
 fun SettingsScreen(
     state: SettingsUiState,
-    onExportSupportLogs: () -> Unit,
-    onExportCrashReport: () -> Unit,
-    onCheckForUpdate: () -> Unit,
-    onDownloadUpdate: () -> Unit,
-    onInstallDownloadedUpdate: () -> Unit,
-    onResumeAfterUpdatePermission: () -> Unit,
-    onDismissUpdateDialog: () -> Unit,
+    onSubscribeMonthly: () -> Unit,
+    onSubscribeAnnual: () -> Unit,
+    onRestoreSubscription: () -> Unit,
+    onToggleDiagnostics: () -> Unit,
     onOpenHome: () -> Unit,
     onBack: () -> Unit,
 ) {
     val focusRequester = remember { FocusRequester() }
-    val lifecycleOwner = LocalLifecycleOwner.current
+    var pendingSubscriptionPlan by remember { mutableStateOf<SubscriptionPlan?>(null) }
     BackHandler(onBack = onBack)
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
     }
 
-    DisposableEffect(lifecycleOwner, onResumeAfterUpdatePermission) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                onResumeAfterUpdatePermission()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+    pendingSubscriptionPlan?.let { plan ->
+        SubscriptionConfirmationDialog(
+            state = state,
+            plan = plan,
+            onConfirm = {
+                pendingSubscriptionPlan = null
+                when (plan) {
+                    SubscriptionPlan.Monthly -> onSubscribeMonthly()
+                    SubscriptionPlan.Annual -> onSubscribeAnnual()
+                }
+            },
+            onDismiss = { pendingSubscriptionPlan = null },
+        )
     }
 
     BoxWithConstraints(
@@ -104,6 +103,19 @@ fun SettingsScreen(
                 .size(contentWidth, contentHeight)
                 .align(Alignment.Center),
         ) {
+            Text(
+                text = "Assinatura e suporte",
+                modifier = Modifier.offset(x = 78f.sdp(scale), y = 58f.sdp(scale)),
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 30f.ssp(scale),
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "Use o modo grátis com 1 câmera ativa ou assine para liberar o mosaico completo.",
+                modifier = Modifier.offset(x = 78f.sdp(scale), y = 100f.sdp(scale)),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 18f.ssp(scale),
+            )
             Spacer(
                 modifier = Modifier
                     .offset(x = 75f.sdp(scale), y = 132f.sdp(scale))
@@ -115,23 +127,34 @@ fun SettingsScreen(
                 modifier = Modifier.offset(x = 78f.sdp(scale), y = 190f.sdp(scale)),
             ) {
                 SupportActionButton(
-                    label = "Exportar logs para suporte",
+                    label = state.monthlyLabel(),
                     scale = scale,
-                    onClick = onExportSupportLogs,
+                    onClick = { pendingSubscriptionPlan = SubscriptionPlan.Monthly },
+                    enabled = state.canChoosePlan(SubscriptionPlan.Monthly),
                     modifier = Modifier.focusRequester(focusRequester),
                 )
                 Spacer(Modifier.height(16f.sdp(scale)))
                 SupportActionButton(
-                    label = "Exportar logs de crashes",
+                    label = state.annualLabel(),
                     scale = scale,
-                    onClick = onExportCrashReport,
+                    onClick = { pendingSubscriptionPlan = SubscriptionPlan.Annual },
+                    enabled = state.canChoosePlan(SubscriptionPlan.Annual),
                 )
                 Spacer(Modifier.height(16f.sdp(scale)))
                 SupportActionButton(
-                    label = "Buscar atualização",
+                    label = "Restaurar assinatura",
                     scale = scale,
-                    onClick = onCheckForUpdate,
-                    enabled = !state.checkingForUpdate && !state.downloadingUpdate,
+                    onClick = onRestoreSubscription,
+                )
+                Spacer(Modifier.height(16f.sdp(scale)))
+                SupportActionButton(
+                    label = if (state.diagnosticsEnabled) {
+                        "Diagnóstico: Ativado"
+                    } else {
+                        "Diagnóstico: Desativado"
+                    },
+                    scale = scale,
+                    onClick = onToggleDiagnostics,
                 )
                 Spacer(Modifier.height(16f.sdp(scale)))
                 SupportActionButton(
@@ -141,239 +164,187 @@ fun SettingsScreen(
                 )
             }
 
-            state.exportMessage?.let { message ->
-                SupportMessageCard(
-                    text = message,
+            Column(
+                modifier = Modifier.offset(x = 585f.sdp(scale), y = 190f.sdp(scale)),
+                verticalArrangement = Arrangement.spacedBy(14f.sdp(scale)),
+            ) {
+                SupportInfoCard(
+                    title = "Plano",
+                    lines = state.planLines(),
                     scale = scale,
-                    modifier = Modifier
-                        .offset(x = 585f.sdp(scale), y = 190f.sdp(scale))
-                        .size(width = 575f.sdp(scale), height = 268f.sdp(scale)),
+                    width = 575f.sdp(scale),
+                    height = 158f.sdp(scale),
+                )
+                SupportInfoCard(
+                    title = "Diagnóstico",
+                    lines = state.diagnosticsLines(),
+                    scale = scale,
+                    width = 575f.sdp(scale),
+                    height = 118f.sdp(scale),
+                )
+                SupportInfoCard(
+                    title = "Feedback",
+                    lines = listOf("Em breve: canal para sugestões, melhorias e relatos."),
+                    scale = scale,
+                    width = 575f.sdp(scale),
+                    height = 88f.sdp(scale),
+                    enabled = false,
                 )
             }
 
             AppInfoFooter(
                 versionName = state.versionName,
-                license = state.license,
-                siteLabel = state.siteUrl.removePrefix("https://"),
                 scale = scale,
-                modifier = Modifier.offset(x = 82f.sdp(scale), y = 580f.sdp(scale)),
-            )
-        }
-
-        if (state.showUpdateDialog) {
-            UpdateStatusDialog(
-                state = state,
-                scale = scale,
-                onDownloadUpdate = onDownloadUpdate,
-                onInstallDownloadedUpdate = onInstallDownloadedUpdate,
-                onDismiss = onDismissUpdateDialog,
+                modifier = Modifier.offset(x = 82f.sdp(scale), y = 610f.sdp(scale)),
             )
         }
     }
 }
 
 @Composable
-private fun UpdateStatusDialog(
+private fun SubscriptionConfirmationDialog(
     state: SettingsUiState,
-    scale: Float,
-    onDownloadUpdate: () -> Unit,
-    onInstallDownloadedUpdate: () -> Unit,
+    plan: SubscriptionPlan,
+    onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val primaryFocusRequester = remember { FocusRequester() }
-    val changelogScrollState = rememberScrollState()
-    val coroutineScope = rememberCoroutineScope()
-    var changelogFocused by remember { mutableStateOf(false) }
-    val title = when {
-        state.checkingForUpdate -> "Buscando atualização..."
-        state.downloadingUpdate -> "Baixando atualização..."
-        state.downloadedUpdate != null -> "Atualização baixada"
-        state.availableUpdate != null -> "Versão ${state.availableUpdate.versionName} disponível"
-        else -> "Atualização"
-    }
-    val message = when {
-        state.availableUpdate != null && !state.downloadingUpdate && state.downloadedUpdate == null -> {
-            state.availableUpdate.changelog.ifBlank { "Sem changelog informado." }
-        }
-        else -> state.updateMessage.orEmpty()
-    }
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        LaunchedEffect(Unit) {
-            primaryFocusRequester.requestFocus()
-        }
-
-        Box(
-            modifier = Modifier
-                .width(780f.sdp(scale))
-                .height(464f.sdp(scale))
-                .background(
-                    color = SentinelaTvColors.panel,
-                    shape = RoundedCornerShape(20f.sdp(scale)),
-                )
-                .border(
-                    width = 2f.sdp(scale),
-                    color = SentinelaTvColors.controlFocused,
-                    shape = RoundedCornerShape(20f.sdp(scale)),
-                ),
-        ) {
-            Text(
-                text = title,
-                modifier = Modifier.offset(x = 44f.sdp(scale), y = 42f.sdp(scale)),
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 26f.ssp(scale),
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text = if (
-                    state.availableUpdate != null &&
-                    state.downloadedUpdate == null &&
-                    !state.downloadingUpdate
-                ) {
-                    "Changelog"
-                } else {
-                    "Status"
-                },
-                modifier = Modifier.offset(x = 44f.sdp(scale), y = 94f.sdp(scale)),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontSize = 18f.ssp(scale),
-            )
-            Box(
-                modifier = Modifier
-                    .offset(x = 44f.sdp(scale), y = 134f.sdp(scale))
-                    .size(width = 692f.sdp(scale), height = 188f.sdp(scale))
-                    .border(
-                        width = if (changelogFocused) 2f.sdp(scale) else 1.dp,
-                        color = if (changelogFocused) {
-                            SentinelaTvColors.controlFocused
-                        } else {
-                            SentinelaTvColors.panelBorder
-                        },
-                        shape = RoundedCornerShape(10f.sdp(scale)),
-                    )
-                    .onFocusChanged { changelogFocused = it.isFocused }
-                    .onPreviewKeyEvent { event ->
-                        if (event.type != KeyEventType.KeyDown) {
-                            return@onPreviewKeyEvent false
-                        }
-                        val step = (70f * scale).toInt().coerceAtLeast(1)
-                        when (event.key) {
-                            Key.DirectionDown -> {
-                                if (changelogScrollState.value >= changelogScrollState.maxValue) {
-                                    return@onPreviewKeyEvent false
-                                }
-                                coroutineScope.launch {
-                                    changelogScrollState.scrollTo(
-                                        (changelogScrollState.value + step)
-                                            .coerceAtMost(changelogScrollState.maxValue),
-                                    )
-                                }
-                                true
-                            }
-                            Key.DirectionUp -> {
-                                if (changelogScrollState.value <= 0) {
-                                    return@onPreviewKeyEvent false
-                                }
-                                coroutineScope.launch {
-                                    changelogScrollState.scrollTo(
-                                        (changelogScrollState.value - step).coerceAtLeast(0),
-                                    )
-                                }
-                                true
-                            }
-                            else -> false
-                        }
-                    }
-                    .focusable()
-                    .verticalScroll(changelogScrollState)
-                    .padding(horizontal = 12f.sdp(scale), vertical = 10f.sdp(scale)),
-            ) {
-                Text(
-                    text = message,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 18f.ssp(scale),
-                    lineHeight = 27f.ssp(scale),
-                )
-            }
-
-            Row(
-                modifier = Modifier.offset(x = 40f.sdp(scale), y = 356f.sdp(scale)),
-            ) {
-                when {
-                    state.availableUpdate != null &&
-                        state.downloadedUpdate == null &&
-                        !state.downloadingUpdate -> {
-                        DialogActionButton(
-                            label = "Baixar",
-                            scale = scale,
-                            enabled = !state.checkingForUpdate,
-                            onClick = onDownloadUpdate,
-                            modifier = Modifier.focusRequester(primaryFocusRequester),
-                        )
-                        Spacer(Modifier.width(24f.sdp(scale)))
-                        DialogActionButton(
-                            label = "Fechar",
-                            scale = scale,
-                            onClick = onDismiss,
-                        )
-                    }
-                    state.downloadedUpdate != null -> {
-                        DialogActionButton(
-                            label = "Instalar",
-                            scale = scale,
-                            enabled = !state.downloadingUpdate && !state.checkingForUpdate,
-                            onClick = onInstallDownloadedUpdate,
-                            modifier = Modifier.focusRequester(primaryFocusRequester),
-                        )
-                        Spacer(Modifier.width(24f.sdp(scale)))
-                        DialogActionButton(
-                            label = "Fechar",
-                            scale = scale,
-                            onClick = onDismiss,
-                        )
-                    }
-                    else -> {
-                        DialogActionButton(
-                            label = "Fechar",
-                            scale = scale,
-                            onClick = onDismiss,
-                            modifier = Modifier.focusRequester(primaryFocusRequester),
-                        )
-                    }
-                }
-            }
-        }
-    }
+    SentinelaTvDialog(
+        title = state.subscriptionDialogTitle(plan),
+        message = state.subscriptionDialogMessage(plan),
+        confirmLabel = "Continuar",
+        onConfirm = onConfirm,
+        dismissLabel = "Cancelar",
+        onDismiss = onDismiss,
+    )
 }
 
+private fun SettingsUiState.monthlyLabel(): String =
+    when {
+        billing.isCurrentPlan(SubscriptionPlan.Monthly) -> "Plano mensal atual"
+        billing.monthlyOffer != null -> "Assinar mensal - ${billing.monthlyOffer.formattedPrice}"
+        else -> "Assinar mensal"
+    }
+
+private fun SettingsUiState.annualLabel(): String =
+    when {
+        billing.isCurrentPlan(SubscriptionPlan.Annual) -> "Plano anual atual"
+        billing.annualOffer != null -> "Assinar anual - ${billing.annualOffer.formattedPrice}"
+        else -> "Assinar anual"
+    }
+
+private fun SettingsUiState.canChoosePlan(plan: SubscriptionPlan): Boolean =
+    billing.offerFor(plan) != null && !billing.isCurrentPlan(plan)
+
+private fun SettingsUiState.subscriptionDialogTitle(plan: SubscriptionPlan): String =
+    if (billing.hasFullAccess && billing.activePlan != null && billing.activePlan != plan) {
+        when (plan) {
+            SubscriptionPlan.Monthly -> "Trocar para plano mensal"
+            SubscriptionPlan.Annual -> "Trocar para plano anual"
+        }
+    } else {
+        when (plan) {
+            SubscriptionPlan.Monthly -> "Assinar plano mensal"
+            SubscriptionPlan.Annual -> "Assinar plano anual"
+        }
+    }
+
+private fun SettingsUiState.subscriptionDialogMessage(plan: SubscriptionPlan): String {
+    val offer = billing.offerFor(plan)
+    return buildString {
+        appendLine("Plano: ${offer?.formattedPrice ?: "preço indisponível"}.")
+        appendLine("Teste grátis: 7 dias com todos os recursos.")
+        if (plan == SubscriptionPlan.Annual) {
+            annualSavingsText(
+                monthlyPrice = billing.monthlyOffer?.formattedPrice,
+                annualPrice = billing.annualOffer?.formattedPrice,
+            )?.let { appendLine(it) }
+        }
+        appendLine()
+        if (billing.hasFullAccess) {
+            appendLine("A Google Play mostrará as condições finais da troca antes de confirmar.")
+        } else {
+            appendLine("A cobrança acontece pela Google Play após o teste, se você não cancelar.")
+        }
+    }.trim()
+}
+
+private fun SettingsUiState.planLines(): List<String> = buildList {
+    add(accessLabel)
+    add("Teste grátis: 7 dias com todos os recursos.")
+    billing.monthlyOffer?.let { add("Mensal: ${it.formattedPrice}.") }
+    billing.annualOffer?.let { add("Anual: ${it.formattedPrice}.") }
+    annualSavingsText(
+        monthlyPrice = billing.monthlyOffer?.formattedPrice,
+        annualPrice = billing.annualOffer?.formattedPrice,
+    )?.let { add(it) }
+    if (billing.access == SubscriptionAccess.FreeLimited) {
+        add("Modo grátis: escolha 1 câmera ativa em Cadastrar câmeras > Conectadas.")
+    }
+    message?.let { add(it) }
+}
+
+private fun SettingsUiState.diagnosticsLines(): List<String> = listOf(
+    "Diagnóstico automático: ${if (diagnosticsEnabled) "ativado" else "desativado"}.",
+    "Não enviamos imagens, senhas ou URLs RTSP completas.",
+)
+
+private fun BillingState.offerFor(plan: SubscriptionPlan): SubscriptionOffer? =
+    when (plan) {
+        SubscriptionPlan.Monthly -> monthlyOffer
+        SubscriptionPlan.Annual -> annualOffer
+    }
+
+private fun BillingState.isCurrentPlan(plan: SubscriptionPlan): Boolean =
+    hasFullAccess && activePlan == plan
+
 @Composable
-private fun SupportMessageCard(
-    text: String,
+private fun SupportInfoCard(
+    title: String,
+    lines: List<String>,
     scale: Float,
-    modifier: Modifier = Modifier,
+    width: Dp,
+    height: Dp,
+    enabled: Boolean = true,
 ) {
+    val scrollState = rememberScrollState()
+    val alpha = if (enabled) 1f else 0.58f
+
     Box(
-        modifier = modifier
+        modifier = Modifier
+            .width(width)
+            .height(height)
             .background(
-                color = SentinelaTvColors.panel,
+                color = SentinelaTvColors.panel.copy(alpha = alpha),
                 shape = RoundedCornerShape(14f.sdp(scale)),
             ),
-        contentAlignment = Alignment.CenterStart,
+        contentAlignment = Alignment.TopStart,
     ) {
-        val scrollState = rememberScrollState()
-        Text(
-            text = text,
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24f.sdp(scale), vertical = 16f.sdp(scale))
                 .verticalScroll(scrollState),
-            color = MaterialTheme.colorScheme.onBackground,
-            fontSize = 16f.ssp(scale),
-            lineHeight = 24f.ssp(scale),
-        )
+        ) {
+            Text(
+                text = title,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = alpha),
+                fontSize = 18f.ssp(scale),
+                lineHeight = 23f.ssp(scale),
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(8f.sdp(scale)))
+            lines.forEachIndexed { index, line ->
+                Text(
+                    text = line,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = alpha),
+                    fontSize = 15f.ssp(scale),
+                    lineHeight = 21f.ssp(scale),
+                )
+                if (index < lines.lastIndex) {
+                    Spacer(Modifier.height(4f.sdp(scale)))
+                }
+            }
+        }
     }
 }
 
@@ -388,27 +359,8 @@ private fun SupportActionButton(
     TvActionButton(
         label = label,
         scale = scale,
-        width = 390f.sdp(scale),
+        width = 430f.sdp(scale),
         height = 64f.sdp(scale),
-        enabled = enabled,
-        onClick = onClick,
-        modifier = modifier,
-    )
-}
-
-@Composable
-private fun DialogActionButton(
-    label: String,
-    scale: Float,
-    onClick: () -> Unit,
-    enabled: Boolean = true,
-    modifier: Modifier = Modifier,
-) {
-    TvActionButton(
-        label = label,
-        scale = scale,
-        width = 220f.sdp(scale),
-        height = 62f.sdp(scale),
         enabled = enabled,
         onClick = onClick,
         modifier = modifier,
@@ -463,9 +415,12 @@ private fun TvActionButton(
     ) {
         Text(
             text = label,
-            modifier = Modifier.offset(x = 30f.sdp(scale)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 30f.sdp(scale)),
             color = contentColor,
             fontSize = 20f.ssp(scale),
+            lineHeight = 24f.ssp(scale),
             fontWeight = FontWeight.Bold,
         )
     }

@@ -14,6 +14,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(libs.kxml2)
+    compileOnly(libs.kxml2)
+    testImplementation(libs.kxml2)
     testImplementation(libs.junit)
 }

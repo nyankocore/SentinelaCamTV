@@ -1,22 +1,30 @@
 # Sentinela Cam TV
 
-Sentinela Cam TV é um aplicativo open-source para visualizar câmeras de segurança em Android TV e Google TV.
+Sentinela Cam TV é um aplicativo comercial para visualizar câmeras de segurança em Android TV e Google TV.
 
-Ele foi criado para monitoramento local, com foco em privacidade, controle remoto, simplicidade e bom funcionamento em TVs e TV Boxes com hardware modesto.
+O foco do app é transformar a TV em uma central simples de monitoramento local: mosaico de câmeras, tela cheia, cadastro por RTSP direto, descoberta ONVIF e navegação pensada para controle remoto.
 
 ![Mosaico do Sentinela Cam TV](docs/images/mosaico-readme.png)
 
+## Estado comercial
+
+A partir da versão `2.0.0`, o projeto passa a ser proprietário e exclusivo da Google Play Store.
+
+A fase `1.x` foi a última fase pública/GPL já publicada. Os direitos concedidos nas versões GPL anteriores continuam válidos para essas versões, mas novas versões comerciais não serão distribuídas como software livre.
+
 ## Principais recursos
 
-- Mosaico adaptativo para visualizar várias câmeras na TV.
+- Mosaico adaptativo para visualizar câmeras na TV.
 - Tela cheia para acompanhar uma câmera individual.
 - Cadastro por RTSP direto.
 - Descoberta e cadastro por ONVIF.
 - Suporte a DVRs/NVRs com múltiplos canais quando expostos por ONVIF.
-- Alternância entre vídeo HD e SD. AVISO: Várias câmeras em HD no mosaico pode travar o app em aparelhos modestos.
-- Interface pensada para controle remoto.
-- Logs locais para suporte, exportados manualmente pelo usuário.
-- Atualização manual pelo GitHub Releases.
+- Alternância entre vídeo HD e SD. Aviso: várias câmeras em HD no mosaico podem travar o app em aparelhos modestos.
+- Overlay de diagnóstico para investigar reprodução, codec, decoder, buffer e reconexões.
+- Interface pensada para controle remoto e TV Boxes modestas.
+- Teste grátis de 7 dias para novos assinantes.
+- Plano mensal e plano anual pela Google Play.
+- Modo grátis limitado a 1 câmera ativa.
 
 ## Compatibilidade atual
 
@@ -24,38 +32,26 @@ No momento, o Sentinela Cam TV é focado em câmeras fixas via RTSP ou ONVIF.
 
 O ONVIF é usado para descoberta, autenticação e obtenção dos streams RTSP. O app ainda não controla PTZ, movimentação, zoom óptico, presets ou outros comandos de câmera.
 
-O foco atual é visualizar câmeras na TV, não administrar todas as funções do dispositivo.
+O foco atual é visualização, não administração completa do dispositivo.
 
-## Privacidade
+## Privacidade e diagnóstico
 
-O Sentinela Cam TV não usa anúncios, rastreamento, analytics, telemetria, Firebase, Google Play Services ou nuvem obrigatória.
+O app não envia imagens das câmeras, senhas, credenciais ou URLs RTSP completas para servidores externos.
 
-As câmeras são acessadas localmente. O aplicativo não envia imagens, credenciais, logs ou dados das câmeras para servidores externos.
+Na versão Play, o diagnóstico automático pode usar Firebase Crashlytics e Android Vitals para registrar falhas técnicas. Esses registros devem conter apenas dados sanitizados, como versão do app, modelo do aparelho, Android, ABI, tipo de stream, codec, decoder e erro curto de reprodução.
 
-## Download
+O diagnóstico automático pode ser ativado ou desativado dentro do app.
 
-Baixe a versão mais recente na página de releases:
+## Distribuição
 
-https://github.com/nyankocore/SentinelaCamTV/releases/latest
+A distribuição comercial será feita pela Google Play Store em formato Android App Bundle (`.aab`).
 
-Escolha o APK da arquitetura do seu aparelho. Se não souber qual usar, baixe o APK `universal`.
+O repositório de desenvolvimento deve permanecer privado. Não há publicação nova planejada por GitHub Releases ou F-Droid.
 
-## Suporte
+## Desenvolvimento
 
-Encontrou algum problema? relate na página Issues:
-https://github.com/nyankocore/SentinelaCamTV/issues
-Para facilitar o diagnóstico envie o log do app, exporte o arquivo pelo app, envie para um serviço de nuvem e cole o link de compartilhamento do arquivo no relato do problema.
-
-## Sugestões, feedback, perguntas
-
-https://github.com/nyankocore/SentinelaCamTV/discussions
-
-## Estado do projeto
-
-O app está em desenvolvimento ativo. Algumas funções ainda podem mudar.
-
-No momento, o projeto está em desenvolvimento individual. Relatos de bugs são bem-vindos, mas contribuições de código ainda não estão abertas.
+Este repositório é de desenvolvimento individual no momento. Pull requests e contribuições externas não estão abertas.
 
 ## Licença
 
-Sentinela Cam TV é software livre licenciado sob `GPL-3.0-or-later`.
+Novas versões a partir da `2.0.0` são proprietárias. Consulte [LICENSE](LICENSE).

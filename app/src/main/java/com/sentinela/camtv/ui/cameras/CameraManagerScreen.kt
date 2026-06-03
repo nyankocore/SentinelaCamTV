@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -211,6 +213,7 @@ fun CameraManagerScreen(
     onConnectManualRtspCamera: () -> Unit,
     onDismissAuthDialog: () -> Unit,
     onOpenMosaic: () -> Unit,
+    onSetFreeActiveCamera: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(CameraManagerTab.ONVIF) }
@@ -296,6 +299,7 @@ fun CameraManagerScreen(
                         metrics = metrics,
                         focusRequesters = focusRequesters,
                         onOpenMosaic = onOpenMosaic,
+                        onSetFreeActiveCamera = onSetFreeActiveCamera,
                     )
                 }
             }
@@ -444,12 +448,17 @@ private fun OnvifTab(
                     )
                 }
             }
-            InfoCard(
-                message = "Usuário e senha são salvos de forma criptografada neste aparelho.",
-                width = metrics.statusCardWidth,
-                height = metrics.dp(76f),
-                metrics = metrics,
-            )
+            Column(
+                modifier = Modifier.width(metrics.statusCardWidth),
+            ) {
+                Spacer(Modifier.height(metrics.dp(38f)))
+                InfoCard(
+                    message = "Usuário e senha são salvos de forma criptografada neste aparelho.",
+                    width = metrics.statusCardWidth,
+                    height = metrics.dp(76f),
+                    metrics = metrics,
+                )
+            }
         }
 
         Spacer(Modifier.height(metrics.dp(30f)))
@@ -646,6 +655,7 @@ private fun ConnectedTab(
     metrics: CameraManagerMetrics,
     focusRequesters: CameraManagerFocusRequesters,
     onOpenMosaic: () -> Unit,
+    onSetFreeActiveCamera: (String) -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -671,26 +681,40 @@ private fun ConnectedTab(
                         },
                 )
             } else {
-                state.cameras.sortedBy { it.position }.take(5).forEachIndexed { index, camera ->
-                    CameraListItem(
-                        title = camera.name,
-                        subtitle = camera.connectedSubtitle(),
-                        height = metrics.rowCardHeight,
-                        metrics = metrics,
-                        modifier = if (index == 0) {
-                            Modifier
-                                .focusRequester(focusRequesters.firstContent)
-                                .focusProperties {
+                val sortedCameras = connectedCamerasForDisplay(state.cameras)
+                LazyColumn(
+                    modifier = Modifier.height(metrics.dp(360f)),
+                    verticalArrangement = Arrangement.spacedBy(metrics.dp(8f)),
+                ) {
+                    itemsIndexed(
+                        items = sortedCameras,
+                        key = { _, camera -> camera.id },
+                    ) { index, camera ->
+                        CameraListItem(
+                            title = camera.name,
+                            subtitle = camera.connectedSubtitle(
+                                freeLimitActive = state.freeLimitActive,
+                                freeActiveCameraId = state.freeActiveCameraId,
+                            ),
+                            height = metrics.rowCardHeight,
+                            metrics = metrics,
+                            onClick = {
+                                if (state.freeLimitActive) {
+                                    onSetFreeActiveCamera(camera.id)
+                                }
+                            },
+                            modifier = if (index == 0) {
+                                Modifier
+                                    .focusRequester(focusRequesters.firstContent)
+                                    .focusProperties {
+                                        right = focusRequesters.viewMosaic
+                                    }
+                            } else {
+                                Modifier.focusProperties {
                                     right = focusRequesters.viewMosaic
                                 }
-                        } else {
-                            Modifier.focusProperties {
-                                right = focusRequesters.viewMosaic
-                            }
-                        },
-                    )
-                    if (index < state.cameras.size - 1 && index < 4) {
-                        Spacer(Modifier.height(metrics.dp(8f)))
+                            },
+                        )
                     }
                 }
             }
@@ -712,6 +736,10 @@ private fun ConnectedTab(
             PanelText("ONVIF: ${state.cameras.count { it.source is OnvifCameraSource || it.source is DvrRtspChannel }}", metrics)
             Spacer(Modifier.height(metrics.dp(12f)))
             PanelText("RTSP direto: ${state.cameras.count { it.source is RtspCameraSource }}", metrics)
+            if (state.freeLimitActive) {
+                Spacer(Modifier.height(metrics.dp(12f)))
+                PanelText("Modo grátis: 1 câmera ativa", metrics)
+            }
             Spacer(Modifier.height(metrics.dp(88f)))
             SentinelaActionButton(
                 label = "Ver câmeras",
@@ -1171,12 +1199,13 @@ private fun CameraListItem(
     height: Dp,
     metrics: CameraManagerMetrics,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
 ) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(metrics.dp(9f))
 
     Button(
-        onClick = {},
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
             .height(height)
@@ -1403,15 +1432,32 @@ private fun CameraManagerMetrics.tabWidth(tab: CameraManagerTab): Dp =
         CameraManagerTab.CONNECTED -> connectedTabWidth
     }
 
-private fun cameraDialogTitle(message: String): String =
+internal fun cameraDialogTitle(message: String): String =
     when {
+        message.contains("modo grátis", ignoreCase = true) ||
+            message.contains("atualizada", ignoreCase = true) -> "Câmera ativa atualizada"
         message.contains("conectada", ignoreCase = true) -> "Câmera conectada"
         message.contains("ONVIF", ignoreCase = true) -> "Falha ONVIF"
         else -> "Falha ao conectar câmera"
     }
 
-private fun Camera.connectedSubtitle(): String =
-    "${source.connectedLabel()} • ${streamLabel()}"
+private fun Camera.connectedSubtitle(
+    freeLimitActive: Boolean,
+    freeActiveCameraId: String?,
+): String {
+    val base = "${source.connectedLabel()} - ${streamLabel()}"
+    if (!freeLimitActive) return base
+
+    val activeLabel = if (id == freeActiveCameraId) {
+        "ativa no modo grátis"
+    } else {
+        "pressione OK para ativar no modo grátis"
+    }
+    return "$base - $activeLabel"
+}
+
+internal fun connectedCamerasForDisplay(cameras: List<Camera>): List<Camera> =
+    cameras.sortedBy { it.position }
 
 private fun Any.connectedLabel(): String =
     when (this) {

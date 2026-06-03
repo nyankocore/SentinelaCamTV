@@ -1,35 +1,50 @@
 # Privacidade
 
-Sentinela Cam TV foi pensado para uso local e privado.
+Sentinela Cam TV foi pensado para visualizar câmeras locais em Android TV e Google TV.
 
-## O que o app não faz
-
-- Não exibe anúncios.
-- Não usa analytics.
-- Não possui rastreadores.
-- Não cria conta de usuário.
-- Não envia telemetria para servidores do projeto.
-- Não depende de nuvem para visualizar câmeras locais.
-- Não envia dados das câmeras para terceiros.
-
-## Dados usados pelo app
+## Dados das câmeras
 
 O app armazena localmente dados necessários para conectar DVRs, NVRs e câmeras, como nome, endereço, URL RTSP e credenciais.
 
-Credenciais salvas pelo app ficam no próprio aparelho. O projeto não recebe, coleta ou sincroniza esses dados.
+Credenciais salvas pelo app ficam no próprio aparelho. O app não envia imagens, senhas, credenciais ou URLs RTSP completas para servidores externos.
 
 ## Rede
 
-O app precisa de permissão de internet/rede para conectar ao DVR ou às câmeras RTSP na rede local. Essa permissão também é usada quando o usuário aciona manualmente a busca por atualizações no GitHub.
+O app usa a rede para conectar aos dispositivos RTSP/ONVIF configurados pelo usuário.
 
-A descoberta ONVIF/WS-Discovery só deve ocorrer após ação do usuário.
+A descoberta ONVIF/WS-Discovery ocorre apenas após ação explícita do usuário.
+
+## Assinaturas
+
+Na versão Play Store, assinaturas e teste grátis são processados pela Google Play Billing.
+
+O app consulta a Google Play para verificar se existe assinatura ativa, teste grátis ativo ou acesso limitado gratuito. A cobrança, cancelamento, renovação e gerenciamento da assinatura são feitos pela conta Google do usuário.
+
+## Diagnóstico automático
+
+Na versão Play Store, o app pode usar Android Vitals e Firebase Crashlytics para ajudar a identificar falhas, travamentos e erros de reprodução.
+
+O diagnóstico automático deve enviar somente dados técnicos sanitizados, como:
+
+- versão do app;
+- modelo do aparelho;
+- versão do Android;
+- ABI;
+- quantidade de câmeras cadastradas;
+- qualidade HD/SD;
+- codec e decoder;
+- erro curto do Media3/ExoPlayer;
+- tipo de origem ONVIF/RTSP;
+- eventos de watchdog e reconexão.
+
+O app não deve enviar imagens das câmeras, áudio, senhas, credenciais, URLs RTSP completas, tokens ou dados pessoais intencionais.
+
+O diagnóstico automático pode ser ativado ou desativado dentro do app.
+
+## Anúncios
+
+A versão `2.0.0` não inclui anúncios.
 
 ## Atualizações
 
-O botão `Buscar atualização` consulta o GitHub Releases apenas quando acionado pelo usuário. O app não faz checagem em segundo plano e não instala atualizações silenciosamente.
-
-## Logs locais
-
-O app pode gerar logs locais para suporte e relatórios locais de crashes. Esses arquivos ficam no aparelho até o usuário decidir exportá-los.
-
-Logs não devem incluir senhas, tokens ou URLs RTSP com credenciais.
+A versão comercial é distribuída pela Google Play Store. O app não usa atualizador próprio pelo GitHub Releases.

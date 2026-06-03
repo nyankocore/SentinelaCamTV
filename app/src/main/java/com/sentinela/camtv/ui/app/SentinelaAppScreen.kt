@@ -76,6 +76,7 @@ fun SentinelaAppScreen() {
                 onConnectManualRtspCamera = cameraManagerViewModel::connectManualRtspCamera,
                 onDismissAuthDialog = cameraManagerViewModel::dismissAuthDialog,
                 onOpenMosaic = appViewModel::openMosaic,
+                onSetFreeActiveCamera = cameraManagerViewModel::setFreeActiveCamera,
                 onBack = appViewModel::goBack,
             )
         }
@@ -84,13 +85,10 @@ fun SentinelaAppScreen() {
             val settingsState by settingsViewModel.state.collectAsState()
             SettingsScreen(
                 state = settingsState,
-                onExportSupportLogs = settingsViewModel::exportSupportLogs,
-                onExportCrashReport = settingsViewModel::exportCrashReport,
-                onCheckForUpdate = settingsViewModel::checkForUpdate,
-                onDownloadUpdate = settingsViewModel::downloadUpdate,
-                onInstallDownloadedUpdate = settingsViewModel::installDownloadedUpdate,
-                onResumeAfterUpdatePermission = settingsViewModel::retryInstallerAfterPermissionResume,
-                onDismissUpdateDialog = settingsViewModel::dismissUpdateDialog,
+                onSubscribeMonthly = { settingsViewModel.subscribeMonthly(activity) },
+                onSubscribeAnnual = { settingsViewModel.subscribeAnnual(activity) },
+                onRestoreSubscription = settingsViewModel::restoreSubscription,
+                onToggleDiagnostics = settingsViewModel::toggleDiagnostics,
                 onOpenHome = appViewModel::openHome,
                 onBack = appViewModel::goBack,
             )

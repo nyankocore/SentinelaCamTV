@@ -68,6 +68,7 @@ fun MosaicScreen(
     var showCameraFocusIndicator by remember { mutableStateOf(true) }
     var focusActivityToken by remember { mutableIntStateOf(0) }
     var videoAspectRatios by remember { mutableStateOf<Map<MosaicAspectRatioKey, Float>>(emptyMap()) }
+    var freeLimitDialogDismissed by remember { mutableStateOf(false) }
 
     BackHandler {
         if (shouldReturnHomeOnMosaicBack(state)) {
@@ -205,6 +206,23 @@ fun MosaicScreen(
                 cameraName = camera.name,
                 onDismiss = mosaicViewModel::dismissCameraDeletion,
                 onConfirm = mosaicViewModel::confirmCameraDeletion,
+            )
+        }
+
+        if (
+            state.freeLimitActive &&
+            state.hiddenByFreeLimitCount > 0 &&
+            !state.quickMenuVisible &&
+            state.cameraPendingDeletion == null &&
+            !freeLimitDialogDismissed
+        ) {
+            FreeLimitDialog(
+                hiddenCameraCount = state.hiddenByFreeLimitCount,
+                onDismiss = { freeLimitDialogDismissed = true },
+                onOpenSettings = {
+                    freeLimitDialogDismissed = true
+                    onOpenSettings()
+                },
             )
         }
     }
@@ -362,6 +380,22 @@ private fun CameraDeletionDialog(
         onDismiss = onDismiss,
         confirmLabel = "Excluir",
         onConfirm = onConfirm,
+    )
+}
+
+@Composable
+private fun FreeLimitDialog(
+    hiddenCameraCount: Int,
+    onDismiss: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
+    SentinelaTvDialog(
+        title = "Modo grátis",
+        message = "O modo grátis permite 1 câmera ativa. Assine para liberar o mosaico completo. Câmeras ocultas agora: $hiddenCameraCount.",
+        dismissLabel = "Continuar",
+        onDismiss = onDismiss,
+        confirmLabel = "Assinar",
+        onConfirm = onOpenSettings,
     )
 }
 
