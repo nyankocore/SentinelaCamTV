@@ -87,6 +87,10 @@ fun RtspCameraTile(
     }
 
     val showFocusedBorder = focused && focusEnabled && showFocusIndicator
+    val tileBorder = cameraTileBorderSpec(
+        focused = showFocusedBorder,
+        selectedForReorder = selectedForReorder,
+    )
 
     DisposableEffect(Unit) {
         onDispose {
@@ -173,12 +177,14 @@ fun RtspCameraTile(
                     else -> false
                 }
             }
-            .border(
-                width = if (showFocusedBorder || selectedForReorder) 4.dp else 1.dp,
-                color = when {
-                    selectedForReorder -> SentinelaTvColors.cameraTileEditSelectedBorder
-                    showFocusedBorder -> SentinelaTvColors.cameraTileFocusedBorder
-                    else -> SentinelaTvColors.cameraTileBorder
+            .then(
+                if (tileBorder != null) {
+                    Modifier.border(
+                        width = tileBorder.width,
+                        color = tileBorder.color,
+                    )
+                } else {
+                    Modifier
                 },
             )
             .onFocusChanged { focusState ->
@@ -223,6 +229,29 @@ fun RtspCameraTile(
 }
 
 private const val CONFIRM_KEY_LONG_PRESS_DELAY_MS = 400L
+
+internal data class CameraTileBorderSpec(
+    val width: androidx.compose.ui.unit.Dp,
+    val color: androidx.compose.ui.graphics.Color,
+)
+
+internal fun cameraTileBorderSpec(
+    focused: Boolean,
+    selectedForReorder: Boolean,
+): CameraTileBorderSpec? =
+    when {
+        selectedForReorder -> CameraTileBorderSpec(
+            width = 4.dp,
+            color = SentinelaTvColors.cameraTileEditSelectedBorder,
+        )
+
+        focused -> CameraTileBorderSpec(
+            width = 4.dp,
+            color = SentinelaTvColors.cameraTileFocusedBorder,
+        )
+
+        else -> null
+    }
 
 private fun Key.isConfirmKey(): Boolean =
     this == Key.DirectionCenter ||

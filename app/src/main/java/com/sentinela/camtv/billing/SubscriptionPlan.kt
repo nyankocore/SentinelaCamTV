@@ -12,6 +12,10 @@ data class SubscriptionOffer(
     val formattedPrice: String,
     val billingPeriod: String,
     val offerToken: String,
+    val priceAmountMicros: Long? = null,
+    val priceCurrencyCode: String? = null,
+    val hasFreeTrial: Boolean = false,
+    val trialPeriod: String? = null,
     val productId: String = PRODUCT_ID,
 ) {
     companion object {
@@ -26,8 +30,23 @@ enum class SubscriptionAccess {
     BillingUnavailable,
 }
 
+enum class SubscriptionStatus {
+    FreeTrialEligible,
+    FreeNoTrial,
+    MonthlyActive,
+    AnnualActive,
+    GracePeriod,
+    OnHold,
+    Expired,
+    CanceledUntilExpiry,
+    BillingUnavailable,
+    Checking,
+    Error,
+}
+
 data class BillingState(
     val access: SubscriptionAccess = SubscriptionAccess.FreeLimited,
+    val status: SubscriptionStatus = SubscriptionStatus.FreeNoTrial,
     val monthlyOffer: SubscriptionOffer? = null,
     val annualOffer: SubscriptionOffer? = null,
     val activePlan: SubscriptionPlan? = null,

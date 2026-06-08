@@ -38,6 +38,10 @@ class AppNavigator(
         openReturnableDestination(AppDestination.Settings)
     }
 
+    fun openSubscription() {
+        openReturnableDestination(AppDestination.Subscription)
+    }
+
     fun goBack() {
         state = state.copy(destination = resolvedReturnDestination())
         returnDestination = AppDestination.Home
@@ -49,6 +53,7 @@ class AppNavigator(
             AppDestination.Home -> state.destination
 
             AppDestination.Cameras,
+            AppDestination.Subscription,
             AppDestination.Settings,
             AppDestination.Loading -> AppDestination.Home
         }

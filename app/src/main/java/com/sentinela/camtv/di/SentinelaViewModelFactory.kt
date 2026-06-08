@@ -8,6 +8,7 @@ import com.sentinela.camtv.ui.home.HomeViewModel
 import com.sentinela.camtv.ui.mosaic.MosaicViewModel
 import com.sentinela.camtv.ui.player.FullscreenPlayerViewModel
 import com.sentinela.camtv.ui.settings.SettingsViewModel
+import com.sentinela.camtv.ui.subscription.SubscriptionViewModel
 
 class SentinelaViewModelFactory(
     private val container: AppContainer,
@@ -32,8 +33,10 @@ class SentinelaViewModelFactory(
             rtspCameraDraftRepository = container.rtspCameraDraftRepository,
         )
         SettingsViewModel::class.java -> SettingsViewModel(
-            entitlementRepository = container.entitlementRepository,
             settingsRepository = container.settingsRepository,
+        )
+        SubscriptionViewModel::class.java -> SubscriptionViewModel(
+            entitlementRepository = container.entitlementRepository,
         )
         else -> error("ViewModel sem factory manual: ${modelClass.name}")
     } as T

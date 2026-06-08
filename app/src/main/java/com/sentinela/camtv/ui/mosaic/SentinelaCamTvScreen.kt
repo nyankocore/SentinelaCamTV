@@ -54,7 +54,9 @@ private const val CAMERA_FOCUS_HIDE_DELAY_MS = 5_000L
 fun MosaicScreen(
     viewModelFactory: ViewModelProvider.Factory,
     onOpenHome: () -> Unit,
-    onOpenSettings: () -> Unit,
+    onOpenSubscription: () -> Unit,
+    onOpenDebug: () -> Unit = {},
+    debugQuickMenuLabel: String? = null,
     onExitApp: () -> Unit,
     dvrConfig: DvrConnectionConfig = AppDvrConfig.localDebugDvr,
 ) {
@@ -126,11 +128,11 @@ fun MosaicScreen(
                     mosaicViewModel.closeFullscreen()
                     onOpenHome()
                 },
-                onOpenSettings = {
+                onOpenDebug = {
                     fullscreenViewModel.dismissQuickMenu()
-                    mosaicViewModel.closeFullscreen()
-                    onOpenSettings()
+                    onOpenDebug()
                 },
+                debugQuickMenuLabel = debugQuickMenuLabel,
                 onExitApp = onExitApp,
                 onQuickMenuHintShown = fullscreenViewModel::markQuickMenuHintSeen,
                 modifier = Modifier.fillMaxSize(),
@@ -193,10 +195,11 @@ fun MosaicScreen(
                     mosaicViewModel.dismissQuickMenu()
                     onOpenHome()
                 },
-                onOpenSettings = {
+                onOpenDebug = {
                     mosaicViewModel.dismissQuickMenu()
-                    onOpenSettings()
+                    onOpenDebug()
                 },
+                debugQuickMenuLabel = debugQuickMenuLabel,
                 modifier = Modifier.align(Alignment.Center),
             )
         }
@@ -219,9 +222,9 @@ fun MosaicScreen(
             FreeLimitDialog(
                 hiddenCameraCount = state.hiddenByFreeLimitCount,
                 onDismiss = { freeLimitDialogDismissed = true },
-                onOpenSettings = {
+                onOpenSubscription = {
                     freeLimitDialogDismissed = true
-                    onOpenSettings()
+                    onOpenSubscription()
                 },
             )
         }
@@ -232,13 +235,17 @@ fun MosaicScreen(
 fun SentinelaCamTvScreen(
     viewModelFactory: ViewModelProvider.Factory,
     onOpenHome: () -> Unit,
-    onOpenSettings: () -> Unit,
+    onOpenSubscription: () -> Unit,
+    onOpenDebug: () -> Unit = {},
+    debugQuickMenuLabel: String? = null,
     onExitApp: () -> Unit,
 ) {
     MosaicScreen(
         viewModelFactory = viewModelFactory,
         onOpenHome = onOpenHome,
-        onOpenSettings = onOpenSettings,
+        onOpenSubscription = onOpenSubscription,
+        onOpenDebug = onOpenDebug,
+        debugQuickMenuLabel = debugQuickMenuLabel,
         onExitApp = onExitApp,
     )
 }
@@ -339,19 +346,22 @@ private fun MosaicQuickMenu(
     onStartReorder: () -> Unit,
     onToggleTransmissionMode: () -> Unit,
     onOpenHome: () -> Unit,
-    onOpenSettings: () -> Unit,
+    onOpenDebug: () -> Unit,
+    debugQuickMenuLabel: String?,
     modifier: Modifier = Modifier,
 ) {
     QuickMenu(
-        actions = listOf(
-            QuickMenuAction("Sair do app", onExitApp),
-            QuickMenuAction(infoMenuLabel(state.showInfo), onToggleInfo),
-            QuickMenuAction(streamQualityLabel(state.streamQuality), onToggleStreamQuality),
-            QuickMenuAction("Editar mosaico", onStartReorder),
-            QuickMenuAction(transmissionModeMenuLabel(state.transmissionMode), onToggleTransmissionMode),
-            QuickMenuAction("Ir para início", onOpenHome),
-            QuickMenuAction("Ir para suporte", onOpenSettings),
-        ),
+        actions = buildList {
+            add(QuickMenuAction("Sair do app", onExitApp))
+            add(QuickMenuAction(infoMenuLabel(state.showInfo), onToggleInfo))
+            add(QuickMenuAction(streamQualityLabel(state.streamQuality), onToggleStreamQuality))
+            add(QuickMenuAction("Editar mosaico", onStartReorder))
+            add(QuickMenuAction(transmissionModeMenuLabel(state.transmissionMode), onToggleTransmissionMode))
+            add(QuickMenuAction("Ir para início", onOpenHome))
+            debugQuickMenuLabel?.let { label ->
+                add(QuickMenuAction(label, onOpenDebug))
+            }
+        },
         modifier = modifier,
     )
 }
@@ -387,7 +397,7 @@ private fun CameraDeletionDialog(
 private fun FreeLimitDialog(
     hiddenCameraCount: Int,
     onDismiss: () -> Unit,
-    onOpenSettings: () -> Unit,
+    onOpenSubscription: () -> Unit,
 ) {
     SentinelaTvDialog(
         title = "Modo grátis",
@@ -395,7 +405,7 @@ private fun FreeLimitDialog(
         dismissLabel = "Continuar",
         onDismiss = onDismiss,
         confirmLabel = "Assinar",
-        onConfirm = onOpenSettings,
+        onConfirm = onOpenSubscription,
     )
 }
 

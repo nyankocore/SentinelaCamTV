@@ -3,8 +3,8 @@ Você está trabalhando no projeto Sentinela Cam TV.
 Contexto:
 - App Android TV / Google TV comercial, proprietário e exclusivo da Google Play Store a partir da versão 2.0.0.
 - A fase 1.x foi a última fase pública/GPL; novas versões comerciais não devem ser tratadas como GitHub/F-Droid.
-- Destino principal: TVs Android e TV Boxes baratas do mercado brasileiro.
-- Hardware-alvo: TV Boxes Full HD com ~1 GB RAM e TVs 4K com ~2 GB RAM.
+- Destino principal: TVs Android TV / Google TV e TV Boxes baratas do mercado brasileiro.
+- Hardware-alvo: Smart TVs e Tv Boxes HD, Full HD com ~1 GB RAM e Smart TVs e TV Boxes 4K com ~2 GB RAM.
 - Hardware do desenvolvedor: Acer Aspire ES 15, i3-6006U, 4 GB RAM e HDD. Priorize comandos, builds e testes leves.
 
 Papel esperado:
@@ -17,7 +17,7 @@ Prioridades:
 1. Privacidade e segurança dos dados das câmeras.
 2. Estabilidade.
 3. Baixo consumo de RAM/CPU.
-4. Compatibilidade com TV Boxes fracas.
+4. Compatibilidade com smart tvs e tvs boxes android modesta.
 5. Experiência comercial clara e honesta.
 6. Simplicidade.
 7. UI bonita, consistente e leve.
@@ -30,14 +30,15 @@ Arquitetura:
 - Não use Leanback, exceto se houver limitação real do Compose for TV ou se for pedido explicitamente.
 - Injeção de dependência manual.
 - Não usar Hilt, Dagger ou Koin.
-- UDF com StateFlow + ViewModel.
+- Arquitetura de apresentação: MVVM com UDF usando StateFlow + ViewModel.
+- Use MVI apenas de forma leve quando ajudar a organizar estados, eventos e efeitos; não criar reducers/intents complexos sem necessidade.
 - Camadas separadas: data -> domain -> presentation.
 - Evite arquitetura exagerada.
 
 UI/UX Android TV:
-- Evolua um design system leve e consistente conforme a UI amadurecer, sem impedir ajustes específicos quando melhorarem a experiência em TV.
+- Evolua um design system consistente conforme a UI amadurecer, sem impedir ajustes específicos quando melhorarem a experiência em TV.
 - Ao mexer em UI/design, use o design system do app como ponto de partida: cores, foco, bordas, espaçamentos, cards, botões e overlays devem vir de tokens ou componentes reutilizáveis sempre que possível. Exceções são permitidas quando melhorarem a experiência em Android TV, mas devem ser conscientes e mencionadas.
-- Evite introduzir novas cores, bordas, foco visual, cards ou botões hardcoded em telas de UI. Se um padrão novo se repetir, promova-o para o design system leve.
+- Evite introduzir novas cores, bordas, foco visual, cards ou botões hardcoded em telas de UI. Se um padrão novo se repetir, promova-o para o design system.
 - Use um único padrão global de foco por D-Pad.
 - O foco deve ser claro, proeminente e previsível.
 - Diferencie foco, aba atual, seleção e estado ativado/desativado.
@@ -46,6 +47,7 @@ UI/UX Android TV:
 - Priorize legibilidade à distância.
 - Não depender de toque, mouse ou teclado.
 - Evite animações pesadas, blur, sombras caras e efeitos desnecessários.
+- Evite cabeçalhos, títulos ou subtítulos desnecessários. não precisa ter cabeçalho grande se os botões e cards já deixarem claro onde o usuário está. Se for apenas decorativo ou repetitivo, não crie. Use cabeçalho somente se ele tiver função real de orientação.
 - Para mudanças grandes de UI, prefira mockups ou prévias visuais antes de codificar.
 - No mosaico de câmeras, use chaves estáveis como `key(camera.id)`.
 

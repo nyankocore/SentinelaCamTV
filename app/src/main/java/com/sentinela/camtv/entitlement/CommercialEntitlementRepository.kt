@@ -5,6 +5,7 @@ import com.sentinela.camtv.billing.BillingRepository
 import com.sentinela.camtv.billing.BillingState
 import com.sentinela.camtv.billing.SubscriptionAccess
 import com.sentinela.camtv.billing.SubscriptionPlan
+import com.sentinela.camtv.billing.SubscriptionStatus
 import com.sentinela.camtv.preferences.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -77,6 +78,7 @@ class CommercialEntitlementRepository(
         if (clockMillis() > graceUntilEpochMillis) return this
         return copy(
             access = SubscriptionAccess.Premium,
+            status = SubscriptionStatus.GracePeriod,
             loading = false,
             message = message ?: "Assinatura mantida temporariamente enquanto a Google Play responde.",
         )

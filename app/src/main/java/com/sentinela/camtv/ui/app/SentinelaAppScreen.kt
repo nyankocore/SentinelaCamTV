@@ -27,6 +27,8 @@ import com.sentinela.camtv.ui.home.HomeScreen
 import com.sentinela.camtv.ui.mosaic.MosaicScreen
 import com.sentinela.camtv.ui.settings.SettingsScreen
 import com.sentinela.camtv.ui.settings.SettingsViewModel
+import com.sentinela.camtv.ui.subscription.SubscriptionScreen
+import com.sentinela.camtv.ui.subscription.SubscriptionViewModel
 import com.sentinela.camtv.ui.theme.SentinelaBackground
 
 @Composable
@@ -37,62 +39,85 @@ fun SentinelaAppScreen() {
         SentinelaViewModelFactory(application.container)
     }
     val activity = remember(context) { context.findActivity() }
+    val debugFeatureProvider = application.container.debugFeatureProvider
+    val debugState by debugFeatureProvider.state.collectAsState()
     val appViewModel: AppViewModel = viewModel(factory = viewModelFactory)
     val appState by appViewModel.state.collectAsState()
 
-    when (appState.destination) {
-        AppDestination.Loading -> LoadingScreen()
-        AppDestination.Home -> {
-            HomeScreen(
-                onOpenMosaic = appViewModel::openMosaic,
-                onOpenCameras = appViewModel::openCameras,
-                onOpenSettings = appViewModel::openSettings,
-            )
-        }
-        AppDestination.Mosaic -> MosaicScreen(
-            viewModelFactory = viewModelFactory,
-            onOpenHome = appViewModel::openHome,
-            onOpenSettings = appViewModel::openSettings,
-            onExitApp = {
-                activity?.finishAndRemoveTask() ?: activity?.finish()
-            },
-        )
-        AppDestination.Cameras -> {
-            val cameraManagerViewModel: CameraManagerViewModel = viewModel(factory = viewModelFactory)
-            val cameraManagerState by cameraManagerViewModel.state.collectAsState()
-            CameraManagerScreen(
-                state = cameraManagerState,
-                onDiscoverOnvif = cameraManagerViewModel::discoverOnvifDevices,
-                onSelectOnvifDevice = cameraManagerViewModel::selectDiscoveredDevice,
-                onUsernameChanged = cameraManagerViewModel::updateUsername,
-                onPasswordChanged = cameraManagerViewModel::updatePassword,
-                onSaveSelectedOnvifCamera = cameraManagerViewModel::saveSelectedOnvifCamera,
-                onRtspNameChanged = cameraManagerViewModel::updateRtspName,
-                onRtspMainUrlChanged = cameraManagerViewModel::updateRtspMainUrl,
-                onRtspSubUrlChanged = cameraManagerViewModel::updateRtspSubUrl,
-                onRtspUsernameChanged = cameraManagerViewModel::updateRtspUsername,
-                onRtspPasswordChanged = cameraManagerViewModel::updateRtspPassword,
-                onCopyRtspMainUrlToSubUrl = cameraManagerViewModel::copyRtspMainUrlToSubUrl,
-                onConnectManualRtspCamera = cameraManagerViewModel::connectManualRtspCamera,
-                onDismissAuthDialog = cameraManagerViewModel::dismissAuthDialog,
-                onOpenMosaic = appViewModel::openMosaic,
-                onSetFreeActiveCamera = cameraManagerViewModel::setFreeActiveCamera,
-                onBack = appViewModel::goBack,
-            )
-        }
-        AppDestination.Settings -> {
-            val settingsViewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
-            val settingsState by settingsViewModel.state.collectAsState()
-            SettingsScreen(
-                state = settingsState,
-                onSubscribeMonthly = { settingsViewModel.subscribeMonthly(activity) },
-                onSubscribeAnnual = { settingsViewModel.subscribeAnnual(activity) },
-                onRestoreSubscription = settingsViewModel::restoreSubscription,
-                onToggleDiagnostics = settingsViewModel::toggleDiagnostics,
+    Box(modifier = Modifier.fillMaxSize()) {
+        when (appState.destination) {
+            AppDestination.Loading -> LoadingScreen()
+            AppDestination.Home -> {
+                HomeScreen(
+                    onOpenMosaic = appViewModel::openMosaic,
+                    onOpenCameras = appViewModel::openCameras,
+                    onOpenSubscription = appViewModel::openSubscription,
+                    onOpenSettings = appViewModel::openSettings,
+                    debugActionLabel = debugState.homeActionLabel,
+                    onOpenDebug = debugFeatureProvider::openPanel,
+                    footerSuffix = debugState.footerSuffix,
+                )
+            }
+            AppDestination.Mosaic -> MosaicScreen(
+                viewModelFactory = viewModelFactory,
                 onOpenHome = appViewModel::openHome,
-                onBack = appViewModel::goBack,
+                onOpenSubscription = appViewModel::openSubscription,
+                onOpenDebug = debugFeatureProvider::openPanel,
+                debugQuickMenuLabel = debugState.quickMenuActionLabel,
+                onExitApp = {
+                    activity?.finishAndRemoveTask() ?: activity?.finish()
+                },
             )
+            AppDestination.Subscription -> {
+                val subscriptionViewModel: SubscriptionViewModel = viewModel(factory = viewModelFactory)
+                val subscriptionState by subscriptionViewModel.state.collectAsState()
+                SubscriptionScreen(
+                    state = subscriptionState,
+                    onSubscribe = { plan -> subscriptionViewModel.subscribe(activity, plan) },
+                    onRestoreSubscription = subscriptionViewModel::restoreSubscription,
+                    onUpdatePayment = subscriptionViewModel::updatePayment,
+                    onMessageTimeout = subscriptionViewModel::clearMessage,
+                    onOpenHome = appViewModel::openHome,
+                    onBack = appViewModel::goBack,
+                    footerSuffix = debugState.footerSuffix,
+                )
+            }
+            AppDestination.Cameras -> {
+                val cameraManagerViewModel: CameraManagerViewModel = viewModel(factory = viewModelFactory)
+                val cameraManagerState by cameraManagerViewModel.state.collectAsState()
+                CameraManagerScreen(
+                    state = cameraManagerState,
+                    onDiscoverOnvif = cameraManagerViewModel::discoverOnvifDevices,
+                    onSelectOnvifDevice = cameraManagerViewModel::selectDiscoveredDevice,
+                    onUsernameChanged = cameraManagerViewModel::updateUsername,
+                    onPasswordChanged = cameraManagerViewModel::updatePassword,
+                    onSaveSelectedOnvifCamera = cameraManagerViewModel::saveSelectedOnvifCamera,
+                    onRtspNameChanged = cameraManagerViewModel::updateRtspName,
+                    onRtspMainUrlChanged = cameraManagerViewModel::updateRtspMainUrl,
+                    onRtspSubUrlChanged = cameraManagerViewModel::updateRtspSubUrl,
+                    onRtspUsernameChanged = cameraManagerViewModel::updateRtspUsername,
+                    onRtspPasswordChanged = cameraManagerViewModel::updateRtspPassword,
+                    onCopyRtspMainUrlToSubUrl = cameraManagerViewModel::copyRtspMainUrlToSubUrl,
+                    onConnectManualRtspCamera = cameraManagerViewModel::connectManualRtspCamera,
+                    onDismissAuthDialog = cameraManagerViewModel::dismissAuthDialog,
+                    onOpenMosaic = appViewModel::openMosaic,
+                    onSetFreeActiveCamera = cameraManagerViewModel::setFreeActiveCamera,
+                    onBack = appViewModel::goBack,
+                )
+            }
+            AppDestination.Settings -> {
+                val settingsViewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
+                val settingsState by settingsViewModel.state.collectAsState()
+                SettingsScreen(
+                    state = settingsState,
+                    onToggleDiagnostics = settingsViewModel::toggleDiagnostics,
+                    onOpenHome = appViewModel::openHome,
+                    onBack = appViewModel::goBack,
+                    footerSuffix = debugState.footerSuffix,
+                )
+            }
         }
+        debugFeatureProvider.Render()
     }
 }
 

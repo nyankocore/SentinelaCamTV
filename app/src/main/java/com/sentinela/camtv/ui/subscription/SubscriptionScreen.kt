@@ -1,4 +1,4 @@
-package com.sentinela.camtv.ui.settings
+package com.sentinela.camtv.ui.subscription
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -45,22 +45,44 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.sentinela.camtv.billing.SubscriptionPlan
 import com.sentinela.camtv.ui.common.AppInfoFooter
 import com.sentinela.camtv.ui.design.SentinelaTvColors
+import com.sentinela.camtv.ui.design.SentinelaTvDialog
+import com.sentinela.camtv.ui.design.SentinelaTransientMessage
 
 @Composable
-fun SettingsScreen(
-    state: SettingsUiState,
-    onToggleDiagnostics: () -> Unit,
+fun SubscriptionScreen(
+    state: SubscriptionUiState,
+    onSubscribe: (SubscriptionPlan) -> Unit,
+    onRestoreSubscription: () -> Unit,
+    onUpdatePayment: () -> Unit,
+    onMessageTimeout: () -> Unit,
     onOpenHome: () -> Unit,
     onBack: () -> Unit,
     footerSuffix: String? = null,
 ) {
     val focusRequester = remember { FocusRequester() }
+    var pendingPlan by remember { mutableStateOf<SubscriptionPlan?>(null) }
+
     BackHandler(onBack = onBack)
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    pendingPlan?.let { plan ->
+        SentinelaTvDialog(
+            title = dialogTitle(state.billing, plan),
+            message = dialogMessage(state.billing, plan),
+            confirmLabel = "Continuar",
+            onConfirm = {
+                pendingPlan = null
+                onSubscribe(plan)
+            },
+            dismissLabel = "Cancelar",
+            onDismiss = { pendingPlan = null },
+        )
     }
 
     BoxWithConstraints(
@@ -79,61 +101,53 @@ fun SettingsScreen(
                 .size(contentWidth, contentHeight)
                 .align(Alignment.Center),
         ) {
-            Text(
-                text = "Suporte",
-                modifier = Modifier.offset(x = 78f.sdp(scale), y = 62f.sdp(scale)),
-                color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 30f.ssp(scale),
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(
-                modifier = Modifier
-                    .offset(x = 75f.sdp(scale), y = 124f.sdp(scale))
-                    .size(width = 1130f.sdp(scale), height = 1.dp)
-                    .background(SentinelaTvColors.divider),
-            )
-
             Column(
-                modifier = Modifier.offset(x = 78f.sdp(scale), y = 190f.sdp(scale)),
+                modifier = Modifier.offset(x = 78f.sdp(scale), y = 78f.sdp(scale)),
                 verticalArrangement = Arrangement.spacedBy(16f.sdp(scale)),
             ) {
-                SupportActionButton(
-                    label = if (state.diagnosticsEnabled) {
-                        "Diagnóstico: Ativado"
-                    } else {
-                        "Diagnóstico: Desativado"
-                    },
-                    scale = scale,
-                    onClick = onToggleDiagnostics,
-                    modifier = Modifier.focusRequester(focusRequester),
-                )
-                SupportActionButton(
-                    label = "Feedback: em breve",
-                    scale = scale,
-                    enabled = false,
-                    onClick = {},
-                )
-                SupportActionButton(
-                    label = "Ir para início",
-                    scale = scale,
-                    onClick = onOpenHome,
-                )
+                val actions = subscriptionActions(state.billing)
+                val firstFocusableIndex = actions.indexOfFirst { it.enabled }.coerceAtLeast(0)
+                actions.forEachIndexed { index, action ->
+                    SubscriptionActionButton(
+                        action = action,
+                        scale = scale,
+                        onClick = {
+                            when (action.kind) {
+                                SubscriptionActionKind.SubscribeMonthly -> pendingPlan = SubscriptionPlan.Monthly
+                                SubscriptionActionKind.SubscribeAnnual -> pendingPlan = SubscriptionPlan.Annual
+                                SubscriptionActionKind.UpdatePayment -> onUpdatePayment()
+                                SubscriptionActionKind.Restore -> onRestoreSubscription()
+                                SubscriptionActionKind.Home -> onOpenHome()
+                                SubscriptionActionKind.CurrentMonthly,
+                                SubscriptionActionKind.CurrentAnnual -> Unit
+                            }
+                        },
+                        modifier = if (index == firstFocusableIndex) {
+                            Modifier.focusRequester(focusRequester)
+                        } else {
+                            Modifier
+                        },
+                    )
+                }
             }
 
-            SupportInfoCard(
-                title = "Diagnóstico",
-                lines = listOf(
-                    "Diagnóstico automático: ${if (state.diagnosticsEnabled) "ativado" else "desativado"}.",
-                    "Não enviamos imagens, senhas ou URLs RTSP completas.",
-                    "O canal de feedback será disponibilizado em uma versão futura.",
-                ).let { lines ->
-                    state.message?.let { lines + it } ?: lines
-                },
+            PlanCard(
+                lines = planCardLines(state.billing),
                 scale = scale,
                 modifier = Modifier
-                    .offset(x = 585f.sdp(scale), y = 190f.sdp(scale))
-                    .size(width = 575f.sdp(scale), height = 190f.sdp(scale)),
+                    .offset(x = 585f.sdp(scale), y = 78f.sdp(scale))
+                    .size(width = 575f.sdp(scale), height = 420f.sdp(scale)),
             )
+
+            state.message?.takeIf { it.isNotBlank() }?.let { message ->
+                SentinelaTransientMessage(
+                    message = message,
+                    onTimeout = onMessageTimeout,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 44f.sdp(scale)),
+                )
+            }
 
             AppInfoFooter(
                 versionName = state.versionName,
@@ -146,8 +160,7 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun SupportInfoCard(
-    title: String,
+private fun PlanCard(
     lines: List<String>,
     scale: Float,
     modifier: Modifier,
@@ -163,48 +176,51 @@ private fun SupportInfoCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24f.sdp(scale), vertical = 16f.sdp(scale))
+                .padding(horizontal = 28f.sdp(scale), vertical = 22f.sdp(scale))
                 .verticalScroll(scrollState),
         ) {
             Text(
-                text = title,
+                text = "Seu plano",
                 color = MaterialTheme.colorScheme.onBackground,
-                fontSize = 18f.ssp(scale),
-                lineHeight = 23f.ssp(scale),
+                fontSize = 22f.ssp(scale),
+                lineHeight = 27f.ssp(scale),
                 fontWeight = FontWeight.Bold,
             )
-            Spacer(Modifier.height(8f.sdp(scale)))
-            lines.forEachIndexed { index, line ->
+            Spacer(Modifier.height(16f.sdp(scale)))
+            lines.forEach { line ->
                 Text(
                     text = line,
                     color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 15f.ssp(scale),
-                    lineHeight = 21f.ssp(scale),
+                    fontSize = 18f.ssp(scale),
+                    lineHeight = 25f.ssp(scale),
+                    fontWeight = if (line.endsWith("ativo") || line == "Grátis") {
+                        FontWeight.Bold
+                    } else {
+                        FontWeight.Normal
+                    },
                 )
-                if (index < lines.lastIndex) {
-                    Spacer(Modifier.height(4f.sdp(scale)))
-                }
             }
         }
     }
 }
 
 @Composable
-private fun SupportActionButton(
-    label: String,
+private fun SubscriptionActionButton(
+    action: SubscriptionAction,
     scale: Float,
     onClick: () -> Unit,
-    enabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
+    val currentPlanState = action.kind == SubscriptionActionKind.CurrentMonthly ||
+        action.kind == SubscriptionActionKind.CurrentAnnual
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(18f.sdp(scale))
-    val backgroundColor = if (enabled) {
-        SentinelaTvColors.control
-    } else {
-        SentinelaTvColors.control.copy(alpha = 0.45f)
+    val backgroundColor = when {
+        currentPlanState -> SentinelaTvColors.controlSelected
+        action.enabled -> SentinelaTvColors.control
+        else -> SentinelaTvColors.control.copy(alpha = 0.45f)
     }
-    val contentColor = if (enabled) {
+    val contentColor = if (action.enabled || currentPlanState) {
         MaterialTheme.colorScheme.onBackground
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f)
@@ -216,7 +232,7 @@ private fun SupportActionButton(
             .height(64f.sdp(scale))
             .onFocusChanged { focused = it.isFocused }
             .onPreviewKeyEvent { event ->
-                if (enabled && event.type == KeyEventType.KeyUp && event.key.isConfirmKey()) {
+                if (action.enabled && event.type == KeyEventType.KeyUp && event.key.isConfirmKey()) {
                     onClick()
                     true
                 } else {
@@ -230,11 +246,11 @@ private fun SupportActionButton(
                 color = if (focused) SentinelaTvColors.controlFocused else Color.Transparent,
                 shape = shape,
             )
-            .focusable(enabled),
+            .focusable(action.enabled),
         contentAlignment = Alignment.CenterStart,
     ) {
         Text(
-            text = label,
+            text = action.label,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 30f.sdp(scale)),

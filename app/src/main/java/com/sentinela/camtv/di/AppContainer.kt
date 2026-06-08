@@ -12,6 +12,8 @@ import com.sentinela.camtv.data.onvif.AndroidWsDiscoveryClient
 import com.sentinela.camtv.data.onvif.DefaultOnvifRepository
 import com.sentinela.camtv.data.onvif.OnvifRepository
 import com.sentinela.camtv.data.security.CredentialCipher
+import com.sentinela.camtv.debug.DebugFeatureProvider
+import com.sentinela.camtv.debug.createDebugFeatureProvider
 import com.sentinela.camtv.diagnostics.DiagnosticsReporter
 import com.sentinela.camtv.diagnostics.FirebaseDiagnosticsReporter
 import com.sentinela.camtv.diagnostics.NoOpDiagnosticsReporter
@@ -83,5 +85,17 @@ class AppContainer(
     val onvifRepository: OnvifRepository = DefaultOnvifRepository(
         wsDiscoveryClient = AndroidWsDiscoveryClient(appContext),
         soapClient = OnvifSoapClient(),
+    )
+
+    val debugFeatureProvider: DebugFeatureProvider = createDebugFeatureProvider(
+        context = appContext,
+        billingRepository = billingRepository,
+        entitlementRepository = entitlementRepository,
+        settingsRepository = settingsRepository,
+        cameraRepository = cameraRepository,
+        logRepository = logRepository,
+        fileTimberTree = fileTimberTree,
+        crashReporter = crashReporter,
+        diagnosticsReporter = diagnosticsReporter,
     )
 }

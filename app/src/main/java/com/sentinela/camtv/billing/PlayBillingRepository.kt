@@ -21,7 +21,12 @@ class PlayBillingRepository(
     context: Context,
 ) : BillingRepository, PurchasesUpdatedListener {
     private val appContext = context.applicationContext
-    private val _state = MutableStateFlow(BillingState(loading = true))
+    private val _state = MutableStateFlow(
+        BillingState(
+            status = SubscriptionStatus.Checking,
+            loading = true,
+        ),
+    )
     override val state: StateFlow<BillingState> = _state
 
     private var productDetails: ProductDetails? = null
@@ -111,6 +116,7 @@ class PlayBillingRepository(
                     } else {
                         _state.value = BillingState(
                             access = SubscriptionAccess.BillingUnavailable,
+                            status = SubscriptionStatus.BillingUnavailable,
                             loading = false,
                             message = billingResult.debugMessage.ifBlank { "Google Play Billing indisponivel." },
                         )
@@ -120,6 +126,7 @@ class PlayBillingRepository(
                 override fun onBillingServiceDisconnected() {
                     _state.value = _state.value.copy(
                         access = SubscriptionAccess.BillingUnavailable,
+                        status = SubscriptionStatus.BillingUnavailable,
                         loading = false,
                         message = "Google Play Billing desconectado.",
                     )
@@ -148,9 +155,18 @@ class PlayBillingRepository(
 
             val details = products.productDetailsList.firstOrNull()
             productDetails = details
+            val monthlyOffer = details?.offerFor(SubscriptionPlan.Monthly)
+            val annualOffer = details?.offerFor(SubscriptionPlan.Annual)
+            val hasTrialOffer = monthlyOffer?.hasFreeTrial == true || annualOffer?.hasFreeTrial == true
+            val currentState = _state.value
             _state.value = _state.value.copy(
-                monthlyOffer = details?.offerFor(SubscriptionPlan.Monthly),
-                annualOffer = details?.offerFor(SubscriptionPlan.Annual),
+                monthlyOffer = monthlyOffer,
+                annualOffer = annualOffer,
+                status = if (!currentState.hasFullAccess) {
+                    if (hasTrialOffer) SubscriptionStatus.FreeTrialEligible else SubscriptionStatus.FreeNoTrial
+                } else {
+                    currentState.status
+                },
                 loading = false,
             )
         }
@@ -166,6 +182,7 @@ class PlayBillingRepository(
             } else {
                 _state.value = _state.value.copy(
                     access = SubscriptionAccess.BillingUnavailable,
+                    status = SubscriptionStatus.BillingUnavailable,
                     loading = false,
                     message = billingResult.debugMessage.ifBlank { "Nao foi possivel restaurar assinatura." },
                 )
@@ -196,13 +213,19 @@ class PlayBillingRepository(
         val active = activePurchase != null
         activePurchaseToken = activePurchase?.purchaseToken
         val nextActivePlan = if (active) {
-            pendingPlan ?: _state.value.activePlan
+            pendingPlan ?: _state.value.activePlan ?: SubscriptionPlan.Monthly
         } else {
             null
         }
         pendingPlan = null
         _state.value = _state.value.copy(
             access = if (active) SubscriptionAccess.Premium else SubscriptionAccess.FreeLimited,
+            status = when {
+                active && nextActivePlan == SubscriptionPlan.Annual -> SubscriptionStatus.AnnualActive
+                active -> SubscriptionStatus.MonthlyActive
+                _state.value.hasTrialOffer -> SubscriptionStatus.FreeTrialEligible
+                else -> SubscriptionStatus.FreeNoTrial
+            },
             activePlan = nextActivePlan,
             loading = false,
         )
@@ -215,16 +238,28 @@ private fun BillingState.offerFor(plan: SubscriptionPlan): SubscriptionOffer? =
         SubscriptionPlan.Annual -> annualOffer
     }
 
+private val BillingState.hasTrialOffer: Boolean
+    get() = monthlyOffer?.hasFreeTrial == true || annualOffer?.hasFreeTrial == true
+
 private fun ProductDetails.offerFor(plan: SubscriptionPlan): SubscriptionOffer? =
     subscriptionOfferDetails
         ?.firstOrNull { offer -> offer.basePlanId == plan.basePlanId }
         ?.let { offer ->
-            val phase = offer.pricingPhases.pricingPhaseList.lastOrNull()
+            val phases = offer.pricingPhases.pricingPhaseList
+            val paidPhase = phases.lastOrNull { phase -> phase.priceAmountMicros > 0L }
+                ?: phases.lastOrNull()
+            val trialPhase = phases.firstOrNull { phase ->
+                phase.priceAmountMicros == 0L && phase.billingPeriod.isNotBlank()
+            }
             SubscriptionOffer(
                 plan = plan,
-                formattedPrice = phase?.formattedPrice ?: "",
-                billingPeriod = phase?.billingPeriod ?: "",
+                formattedPrice = paidPhase?.formattedPrice ?: "",
+                billingPeriod = paidPhase?.billingPeriod ?: "",
                 offerToken = offer.offerToken,
+                priceAmountMicros = paidPhase?.priceAmountMicros,
+                priceCurrencyCode = paidPhase?.priceCurrencyCode,
+                hasFreeTrial = trialPhase != null,
+                trialPeriod = trialPhase?.billingPeriod,
                 productId = productId,
             )
         }

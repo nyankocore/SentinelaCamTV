@@ -13,6 +13,7 @@ enum class AppDestination {
     Home,
     Mosaic,
     Cameras,
+    Subscription,
     Settings,
 }
 
@@ -59,6 +60,11 @@ class AppViewModel(
 
     fun openSettings() {
         navigator.openSettings()
+        publishNavigationState()
+    }
+
+    fun openSubscription() {
+        navigator.openSubscription()
         publishNavigationState()
     }
 

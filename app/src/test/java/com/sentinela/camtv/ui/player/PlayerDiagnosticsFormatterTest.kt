@@ -183,4 +183,22 @@ class PlayerDiagnosticsFormatterTest {
 
         assertTrue(lines.first().contains("SD auto"))
     }
+
+    @Test
+    fun overlayDoesNotShowLegacyTimeoutBadge() {
+        val lines = PlayerDiagnosticsFormatter.overlayLines(
+            PlayerDiagnostics(
+                cameraName = "CAM5",
+                connectionState = PlayerConnectionState.Connecting,
+                subtype = 1,
+                transmissionMode = TransmissionMode.MENOR_LATENCIA,
+                initialTransportMode = RtspTransportMode.UdpFirst,
+                transportMode = RtspTransportMode.TcpOnly,
+                decoderFallbackEnabled = false,
+                renderedFirstFrame = false,
+            ),
+        )
+
+        assertFalse(lines.any { it.contains("Proteção: timeout") })
+    }
 }

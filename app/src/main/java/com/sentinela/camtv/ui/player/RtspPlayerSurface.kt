@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +38,8 @@ import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.ui.PlayerView
+import com.sentinela.camtv.BuildConfig
+import com.sentinela.camtv.debug.DebugPlayerRegistry
 import com.sentinela.camtv.player.AudioMode
 import com.sentinela.camtv.player.CameraStreamRequest
 import com.sentinela.camtv.player.PlayerMode
@@ -112,6 +115,10 @@ fun RtspPlayerSurface(
 
     val context = LocalContext.current
     val showPlayerInfoState by rememberUpdatedState(showPlayerInfo)
+    val debugPlayerSnapshot by DebugPlayerRegistry.state.collectAsState()
+    val debugPlayerId = remember(request.camera.id, request.mode, request.subtype) {
+        "${request.mode}:${request.camera.id}:${request.subtype}"
+    }
     val backoffPolicy = remember { ReconnectBackoffPolicy() }
     val streamConfig = remember(
         request.mode,
@@ -196,7 +203,6 @@ fun RtspPlayerSurface(
         ) {
             lastWatchdogReason = logMessage
         }
-
         logRtspWarning(
             request = request,
             transportMode = nextTransportMode,
@@ -207,6 +213,9 @@ fun RtspPlayerSurface(
         )
 
         consecutiveFailures = nextFailureCount
+        if (BuildConfig.DEBUG) {
+            DebugPlayerRegistry.reportReconnect(logMessage)
+        }
         transportMode = nextTransportMode
         connectionState = PlayerConnectionState.Reconnecting(message.ifBlank { null })
         playerEnabled = false
@@ -254,6 +263,26 @@ fun RtspPlayerSurface(
         connectionState = PlayerConnectionState.Connecting
         reconnectGeneration += 1
         playerEnabled = true
+    }
+
+    LaunchedEffect(debugPlayerSnapshot.forceReconnectToken) {
+        if (BuildConfig.DEBUG && debugPlayerSnapshot.forceReconnectToken > 0 && playerEnabled) {
+            scheduleReconnect(
+                message = "debug: reconexão forçada",
+                logMessage = "debug panel solicitou reconexão",
+            )
+        }
+    }
+
+    DisposableEffect(debugPlayerId) {
+        if (BuildConfig.DEBUG) {
+            DebugPlayerRegistry.register(debugPlayerId)
+        }
+        onDispose {
+            if (BuildConfig.DEBUG) {
+                DebugPlayerRegistry.unregister(debugPlayerId)
+            }
+        }
     }
 
     LaunchedEffect(playerEnabled, reconnectGeneration, connectionState, request.mode) {
@@ -377,9 +406,12 @@ fun RtspPlayerSurface(
                         request.mode == PlayerMode.Mosaic &&
                         request.subtype == StreamQuality.HD.subtype
                     ) {
-                        connectionState = mappedState
-                        lastError = error.shortMessage()
-                        logRtspWarning(
+                    connectionState = mappedState
+                    lastError = error.shortMessage()
+                    if (BuildConfig.DEBUG) {
+                        DebugPlayerRegistry.reportError(error.shortMessage())
+                    }
+                    logRtspWarning(
                             request = request,
                             transportMode = transportMode,
                             reconnectAttempt = reconnectAttempt,
@@ -403,6 +435,9 @@ fun RtspPlayerSurface(
                     }
                     connectionState = mappedState
                     lastError = error.shortMessage()
+                    if (BuildConfig.DEBUG) {
+                        DebugPlayerRegistry.reportError(error.shortMessage())
+                    }
                     scheduleReconnect(
                         message = mappedState.statusText(),
                         logMessage = error.detailedMessage(),

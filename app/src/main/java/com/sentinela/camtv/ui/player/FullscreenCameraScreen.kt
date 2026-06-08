@@ -42,7 +42,8 @@ fun FullscreenCameraScreen(
     onToggleInfo: () -> Unit,
     onToggleTransmissionMode: () -> Unit,
     onOpenHome: () -> Unit,
-    onOpenSettings: () -> Unit,
+    onOpenDebug: () -> Unit = {},
+    debugQuickMenuLabel: String? = null,
     onExitApp: () -> Unit,
     onQuickMenuHintShown: () -> Unit,
     modifier: Modifier = Modifier,
@@ -112,7 +113,8 @@ fun FullscreenCameraScreen(
                 onToggleInfo = onToggleInfo,
                 onToggleTransmissionMode = onToggleTransmissionMode,
                 onOpenHome = onOpenHome,
-                onOpenSettings = onOpenSettings,
+                onOpenDebug = onOpenDebug,
+                debugQuickMenuLabel = debugQuickMenuLabel,
                 onExitApp = onExitApp,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
@@ -132,20 +134,23 @@ private fun FullscreenQuickMenu(
     onToggleInfo: () -> Unit,
     onToggleTransmissionMode: () -> Unit,
     onOpenHome: () -> Unit,
-    onOpenSettings: () -> Unit,
+    onOpenDebug: () -> Unit,
+    debugQuickMenuLabel: String?,
     onExitApp: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     QuickMenu(
-        actions = listOf(
-            QuickMenuAction(audioLabel(state.audioMode), onToggleAudio),
-            QuickMenuAction(streamQualityLabel(state.streamQuality), onToggleStreamQuality),
-            QuickMenuAction(infoMenuLabel(state.showInfo), onToggleInfo),
-            QuickMenuAction(transmissionModeMenuLabel(state.transmissionMode), onToggleTransmissionMode),
-            QuickMenuAction("Ir para início", onOpenHome),
-            QuickMenuAction("Ir para suporte", onOpenSettings),
-            QuickMenuAction("Sair do app", onExitApp),
-        ),
+        actions = buildList {
+            add(QuickMenuAction(audioLabel(state.audioMode), onToggleAudio))
+            add(QuickMenuAction(streamQualityLabel(state.streamQuality), onToggleStreamQuality))
+            add(QuickMenuAction(infoMenuLabel(state.showInfo), onToggleInfo))
+            add(QuickMenuAction(transmissionModeMenuLabel(state.transmissionMode), onToggleTransmissionMode))
+            add(QuickMenuAction("Ir para início", onOpenHome))
+            debugQuickMenuLabel?.let { label ->
+                add(QuickMenuAction(label, onOpenDebug))
+            }
+            add(QuickMenuAction("Sair do app", onExitApp))
+        },
         modifier = modifier,
     )
 }

@@ -12,9 +12,15 @@ fun AppInfoFooter(
     versionName: String,
     scale: Float,
     modifier: Modifier = Modifier,
+    suffix: String? = null,
 ) {
     Column(modifier = modifier) {
-        AppInfoFooterText("Versão: $versionName", scale)
+        val text = if (suffix.isNullOrBlank()) {
+            "Versão: $versionName"
+        } else {
+            "Versão: $versionName    $suffix"
+        }
+        AppInfoFooterText(text, scale)
     }
 }
 

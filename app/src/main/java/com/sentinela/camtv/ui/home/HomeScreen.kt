@@ -56,7 +56,11 @@ import com.sentinela.camtv.ui.design.SentinelaTvColors
 fun HomeScreen(
     onOpenMosaic: () -> Unit,
     onOpenCameras: () -> Unit,
+    onOpenSubscription: () -> Unit,
     onOpenSettings: () -> Unit,
+    debugActionLabel: String? = null,
+    onOpenDebug: () -> Unit = {},
+    footerSuffix: String? = null,
 ) {
     val focusRequester = remember { FocusRequester() }
 
@@ -123,10 +127,24 @@ fun HomeScreen(
                 )
                 Spacer(Modifier.height(16f.sdp(scale)))
                 HomeActionButton(
+                    label = "Assinatura",
+                    scale = scale,
+                    onClick = onOpenSubscription,
+                )
+                Spacer(Modifier.height(16f.sdp(scale)))
+                HomeActionButton(
                     label = "Suporte",
                     scale = scale,
                     onClick = onOpenSettings,
                 )
+                debugActionLabel?.let { label ->
+                    Spacer(Modifier.height(16f.sdp(scale)))
+                    HomeActionButton(
+                        label = label,
+                        scale = scale,
+                        onClick = onOpenDebug,
+                    )
+                }
             }
 
             Image(
@@ -160,7 +178,8 @@ fun HomeScreen(
             AppInfoFooter(
                 versionName = BuildConfig.VERSION_NAME,
                 scale = scale,
-                modifier = Modifier.offset(x = 82f.sdp(scale), y = 598f.sdp(scale)),
+                modifier = Modifier.offset(x = 82f.sdp(scale), y = 650f.sdp(scale)),
+                suffix = footerSuffix,
             )
         }
     }
