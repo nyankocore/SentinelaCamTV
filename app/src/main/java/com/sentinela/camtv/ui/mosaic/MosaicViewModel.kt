@@ -168,6 +168,23 @@ class MosaicViewModel(
         fullscreenCameraId.value = null
     }
 
+    internal fun navigateFullscreen(
+        direction: MosaicNavigationDirection,
+        layout: MosaicLayout,
+    ) {
+        val currentId = fullscreenCameraId.value ?: return
+        val currentIndex = state.value.cameras.indexOfFirst { camera -> camera.id == currentId }
+        if (currentIndex < 0) return
+
+        val targetIndex = MosaicDirectionalNavigationPolicy.targetIndex(
+            tiles = layout.tiles,
+            currentIndex = currentIndex,
+            direction = direction,
+        ) ?: return
+        val targetCamera = state.value.cameras.getOrNull(targetIndex) ?: return
+        fullscreenCameraId.value = targetCamera.id
+    }
+
     fun toggleInfo() {
         viewModelScope.launch {
             settingsRepository.setShowMosaicInfo(!state.value.showInfo)
