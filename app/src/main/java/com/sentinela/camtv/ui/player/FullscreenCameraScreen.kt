@@ -28,6 +28,7 @@ import com.sentinela.camtv.ui.labels.audioLabel
 import com.sentinela.camtv.ui.labels.infoMenuLabel
 import com.sentinela.camtv.ui.labels.streamQualityLabel
 import com.sentinela.camtv.ui.labels.transmissionModeMenuLabel
+import com.sentinela.camtv.ui.mosaic.MosaicNavigationDirection
 import kotlinx.coroutines.delay
 
 @Composable
@@ -43,6 +44,7 @@ fun FullscreenCameraScreen(
     onToggleTransmissionMode: () -> Unit,
     onOpenHome: () -> Unit,
     onOpenDebug: () -> Unit = {},
+    onNavigateDirection: (MosaicNavigationDirection) -> Unit = {},
     debugQuickMenuLabel: String? = null,
     onExitApp: () -> Unit,
     onQuickMenuHintShown: () -> Unit,
@@ -81,15 +83,22 @@ fun FullscreenCameraScreen(
             .background(SentinelaTvColors.playerBackground)
             .focusRequester(focusRequester)
             .onPreviewKeyEvent { keyEvent ->
-                if (
-                    !state.quickMenuVisible &&
-                    keyEvent.type == KeyEventType.KeyUp &&
-                    keyEvent.key.opensFullscreenQuickMenu()
-                ) {
-                    onShowQuickMenu()
-                    true
-                } else {
-                    false
+                if (state.quickMenuVisible) {
+                    return@onPreviewKeyEvent false
+                }
+                keyEvent.key.fullscreenNavigationDirection()?.let { direction ->
+                    if (keyEvent.type == KeyEventType.KeyUp) {
+                        onNavigateDirection(direction)
+                    }
+                    return@onPreviewKeyEvent true
+                }
+                when {
+                    keyEvent.type == KeyEventType.KeyUp && keyEvent.key.opensFullscreenQuickMenu() -> {
+                        onShowQuickMenu()
+                        true
+                    }
+
+                    else -> false
                 }
             }
             .focusable(enabled = !state.quickMenuVisible),
@@ -193,5 +202,13 @@ internal fun Key.opensFullscreenQuickMenu(): Boolean =
     this == Key.Enter ||
         this == Key.NumPadEnter ||
         this == Key.DirectionCenter
+
+internal fun Key.fullscreenNavigationDirection(): MosaicNavigationDirection? = when (this) {
+    Key.DirectionUp -> MosaicNavigationDirection.Up
+    Key.DirectionDown -> MosaicNavigationDirection.Down
+    Key.DirectionLeft -> MosaicNavigationDirection.Left
+    Key.DirectionRight -> MosaicNavigationDirection.Right
+    else -> null
+}
 
 private const val FULLSCREEN_QUICK_MENU_HINT_DURATION_MS = 4_000L

@@ -97,7 +97,7 @@ fun MosaicScreen(
         fullscreenCamera?.let(fullscreenViewModel::open)
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(SentinelaTvColors.mosaicBackground)
@@ -109,6 +109,24 @@ fun MosaicScreen(
                 false
             },
     ) {
+        val mosaicAspectRatios = state.mosaicAspectRatios(videoAspectRatios)
+        val navigationLayout = remember(
+            state.cameras,
+            state.streamQuality,
+            state.autoQualityOverrides,
+            videoAspectRatios,
+            maxWidth,
+            maxHeight,
+        ) {
+            MosaicLayoutPolicy.calculate(
+                cameraCount = state.cameras.size,
+                availableWidth = (maxWidth.value - SentinelaTvSpacing.mosaicOuter.value * 2f).coerceAtLeast(0f),
+                availableHeight = (maxHeight.value - SentinelaTvSpacing.mosaicOuter.value * 2f).coerceAtLeast(0f),
+                gap = SentinelaTvSpacing.mosaicTileGap.value,
+                aspectRatios = mosaicAspectRatios,
+            )
+        }
+
         if (fullscreenCamera != null) {
             FullscreenCameraScreen(
                 state = fullscreenState,
@@ -132,27 +150,30 @@ fun MosaicScreen(
                     fullscreenViewModel.dismissQuickMenu()
                     onOpenDebug()
                 },
+                onNavigateDirection = { direction ->
+                    mosaicViewModel.navigateFullscreen(direction, navigationLayout)
+                },
                 debugQuickMenuLabel = debugQuickMenuLabel,
                 onExitApp = onExitApp,
                 onQuickMenuHintShown = fullscreenViewModel::markQuickMenuHintSeen,
                 modifier = Modifier.fillMaxSize(),
             )
-            return@Box
+            return@BoxWithConstraints
         }
 
         if (state.isLoading) {
             LoadingMosaicMessage()
-            return@Box
+            return@BoxWithConstraints
         }
 
         if (state.cameras.isEmpty()) {
             EmptyMosaicMessage()
-            return@Box
+            return@BoxWithConstraints
         }
 
         if (state.cameras.any { it.source is DvrRtspChannel } && !dvrConfig.isConfigured()) {
             MissingDvrConfigMessage()
-            return@Box
+            return@BoxWithConstraints
         }
 
         MosaicGrid(
@@ -267,15 +288,7 @@ private fun MosaicGrid(
     BoxWithConstraints(
         modifier = modifier.padding(SentinelaTvSpacing.mosaicOuter),
     ) {
-        val aspectRatios = state.cameras.map { camera ->
-            val effectiveQuality = state.effectiveStreamQuality(camera.id)
-            MosaicLayoutPolicy.aspectRatioFor(
-                cameraId = camera.id,
-                subtype = effectiveQuality.subtype,
-                streamQuality = effectiveQuality,
-                aspectRatios = videoAspectRatios,
-            )
-        }
+        val aspectRatios = state.mosaicAspectRatios(videoAspectRatios)
         val layout = remember(
             state.cameras,
             state.streamQuality,
@@ -335,6 +348,18 @@ private fun MosaicGrid(
             }
         }
     }
+}
+
+private fun MosaicUiState.mosaicAspectRatios(
+    videoAspectRatios: Map<MosaicAspectRatioKey, Float>,
+): List<Float> = cameras.map { camera ->
+    val effectiveQuality = effectiveStreamQuality(camera.id)
+    MosaicLayoutPolicy.aspectRatioFor(
+        cameraId = camera.id,
+        subtype = effectiveQuality.subtype,
+        streamQuality = effectiveQuality,
+        aspectRatios = videoAspectRatios,
+    )
 }
 
 @Composable
