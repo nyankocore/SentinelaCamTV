@@ -12,4 +12,5 @@ interface SettingsRepository {
     suspend fun setFullscreenQuickMenuHintSeen(seen: Boolean)
     suspend fun setMosaicStreamQuality(streamQuality: StreamQuality)
     suspend fun setGlobalTransmissionMode(transmissionMode: TransmissionMode)
+    suspend fun setActiveMosaicIndex(index: Int)
 }

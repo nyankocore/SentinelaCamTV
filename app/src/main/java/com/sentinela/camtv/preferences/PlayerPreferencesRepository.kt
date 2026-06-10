@@ -5,8 +5,10 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.sentinela.camtv.data.mosaic.MOSAIC_COUNT
 import com.sentinela.camtv.player.StreamQuality
 import com.sentinela.camtv.player.TransmissionMode
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +33,7 @@ class PlayerPreferencesRepository(
             globalTransmissionMode = preferences[GLOBAL_TRANSMISSION_MODE]
                 ?.let { value -> runCatching { TransmissionMode.valueOf(value) }.getOrNull() }
                 ?: TransmissionMode.MENOR_LATENCIA,
+            activeMosaicIndex = (preferences[ACTIVE_MOSAIC_INDEX] ?: 0).coerceIn(0, MOSAIC_COUNT - 1),
         )
     }
 
@@ -74,6 +77,12 @@ class PlayerPreferencesRepository(
         }
     }
 
+    override suspend fun setActiveMosaicIndex(index: Int) {
+        dataStore.edit { preferences ->
+            preferences[ACTIVE_MOSAIC_INDEX] = index.coerceIn(0, MOSAIC_COUNT - 1)
+        }
+    }
+
     private companion object {
         val SHOW_PLAYER_INFO = booleanPreferencesKey("show_player_info")
         val SHOW_MOSAIC_INFO = booleanPreferencesKey("show_mosaic_info")
@@ -81,6 +90,7 @@ class PlayerPreferencesRepository(
         val FULLSCREEN_QUICK_MENU_HINT_SEEN = booleanPreferencesKey("fullscreen_quick_menu_hint_seen")
         val MOSAIC_STREAM_QUALITY = stringPreferencesKey("mosaic_stream_quality")
         val GLOBAL_TRANSMISSION_MODE = stringPreferencesKey("global_transmission_mode")
+        val ACTIVE_MOSAIC_INDEX = intPreferencesKey("active_mosaic_index")
     }
 }
 

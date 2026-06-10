@@ -76,6 +76,9 @@ fun SentinelaAppScreen() {
                 onConnectManualRtspCamera = cameraManagerViewModel::connectManualRtspCamera,
                 onDismissAuthDialog = cameraManagerViewModel::dismissAuthDialog,
                 onOpenMosaic = appViewModel::openMosaic,
+                onSelectActiveMosaic = cameraManagerViewModel::selectActiveMosaic,
+                onPlaceCameraInMosaic = cameraManagerViewModel::placeCameraInMosaic,
+                onRemoveCameraFromMosaic = cameraManagerViewModel::removeCameraFromMosaic,
                 onBack = appViewModel::goBack,
             )
         }

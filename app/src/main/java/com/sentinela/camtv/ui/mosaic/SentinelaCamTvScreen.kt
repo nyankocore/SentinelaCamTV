@@ -2,6 +2,7 @@ package com.sentinela.camtv.ui.mosaic
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -68,6 +71,7 @@ fun MosaicScreen(
     var showCameraFocusIndicator by remember { mutableStateOf(true) }
     var focusActivityToken by remember { mutableIntStateOf(0) }
     var videoAspectRatios by remember { mutableStateOf<Map<MosaicAspectRatioKey, Float>>(emptyMap()) }
+    var pendingMosaicSwitch by remember { mutableStateOf<MosaicSwitchTarget?>(null) }
 
     BackHandler {
         if (shouldReturnHomeOnMosaicBack(state)) {
@@ -94,17 +98,15 @@ fun MosaicScreen(
         fullscreenCamera?.let(fullscreenViewModel::open)
     }
 
+    fun showCameraFocus() {
+        showCameraFocusIndicator = true
+        focusActivityToken += 1
+    }
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(SentinelaTvColors.mosaicBackground)
-            .onPreviewKeyEvent { keyEvent ->
-                if (keyEvent.type == KeyEventType.KeyDown && keyEvent.key.isDirectionalKey()) {
-                    showCameraFocusIndicator = true
-                    focusActivityToken += 1
-                }
-                false
-            },
+            .background(SentinelaTvColors.mosaicBackground),
     ) {
         val mosaicAspectRatios = state.mosaicAspectRatios(videoAspectRatios)
         val navigationLayout = remember(
@@ -164,7 +166,21 @@ fun MosaicScreen(
         }
 
         if (state.cameras.isEmpty()) {
-            EmptyMosaicMessage()
+            EmptyMosaicMessage(
+                hasRegisteredCameras = state.registeredCameraCount > 0,
+                activeMosaicIndex = state.activeMosaicIndex,
+                onMosaicBoundarySwitch = { target -> pendingMosaicSwitch = target },
+            )
+            pendingMosaicSwitch?.let { target ->
+                MosaicSwitchDialog(
+                    target = target,
+                    onDismiss = { pendingMosaicSwitch = null },
+                    onConfirm = {
+                        pendingMosaicSwitch = null
+                        mosaicViewModel.switchToMosaic(target.toIndex)
+                    },
+                )
+            }
             return@BoxWithConstraints
         }
 
@@ -190,8 +206,12 @@ fun MosaicScreen(
                 }
             },
             videoAspectRatios = videoAspectRatios,
-            tilesFocusable = !state.quickMenuVisible && state.cameraPendingDeletion == null,
+            tilesFocusable = !state.quickMenuVisible &&
+                state.cameraPendingDeletion == null &&
+                pendingMosaicSwitch == null,
             showFocusIndicator = showCameraFocusIndicator || state.reorderMode,
+            onDirectionalActivity = ::showCameraFocus,
+            onMosaicBoundarySwitch = { target -> pendingMosaicSwitch = target },
             modifier = Modifier.fillMaxSize(),
         )
 
@@ -228,6 +248,17 @@ fun MosaicScreen(
                 onConfirm = mosaicViewModel::confirmCameraDeletion,
             )
         }
+
+        pendingMosaicSwitch?.let { target ->
+            MosaicSwitchDialog(
+                target = target,
+                onDismiss = { pendingMosaicSwitch = null },
+                onConfirm = {
+                    pendingMosaicSwitch = null
+                    mosaicViewModel.switchToMosaic(target.toIndex)
+                },
+            )
+        }
     }
 }
 
@@ -258,11 +289,14 @@ private fun MosaicGrid(
     videoAspectRatios: Map<MosaicAspectRatioKey, Float>,
     tilesFocusable: Boolean,
     showFocusIndicator: Boolean,
+    onDirectionalActivity: () -> Unit,
+    onMosaicBoundarySwitch: (MosaicSwitchTarget) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(
         modifier = modifier.padding(SentinelaTvSpacing.mosaicOuter),
     ) {
+        var focusedCameraId by remember { mutableStateOf<String?>(null) }
         val aspectRatios = state.mosaicAspectRatios(videoAspectRatios)
         val layout = remember(
             state.cameras,
@@ -280,46 +314,82 @@ private fun MosaicGrid(
                 aspectRatios = aspectRatios,
             )
         }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .onPreviewKeyEvent { keyEvent ->
+                    val direction = keyEvent.key.mosaicNavigationDirection() ?: return@onPreviewKeyEvent false
+                    if (keyEvent.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
 
-        layout.tiles.forEach { tile ->
-            val camera = state.cameras.getOrNull(tile.index) ?: return@forEach
-            key(camera.id) {
-                val effectiveQuality = state.effectiveStreamQuality(camera.id)
-                val autoQualityDowngraded = state.isAutoQualityDowngraded(camera.id)
-                val request = remember(camera, effectiveQuality, state.transmissionMode) {
-                    camera.streamRequestFor(PlayerMode.Mosaic).copy(
-                        subtype = effectiveQuality.subtype,
-                        transmissionMode = state.transmissionMode,
-                    )
-                }
-                val rtspUrl = remember(request, rtspUrlBuilder) {
-                    rtspUrlBuilder.build(request)
-                }
-
-                RtspCameraTile(
-                    request = request,
-                    rtspUrl = rtspUrl,
-                    showPlayerInfo = state.showInfo,
-                    autoQualityDowngraded = autoQualityDowngraded,
-                    selectedForReorder = state.selectedForSwapId == camera.id,
-                    requestInitialFocus = camera.id == state.cameras.firstOrNull()?.id,
-                    focusEnabled = tilesFocusable,
-                    showFocusIndicator = showFocusIndicator,
-                    onMosaicHdSoftwareDecoder = onMosaicHdSoftwareDecoder,
-                    onMosaicHdDecoderFailure = onMosaicHdDecoderFailure,
-                    onVideoAspectRatioChanged = onVideoAspectRatioChanged,
-                    onClick = {
-                        onCameraClick(camera)
-                    },
-                    onLongClick = if (state.reorderMode) {
-                        { onCameraLongClick(camera) }
+                    val focusedIndex = state.cameras.indexOfFirst { camera -> camera.id == focusedCameraId }
+                    val switchTarget = if (
+                        tilesFocusable &&
+                        showFocusIndicator &&
+                        !state.reorderMode &&
+                        focusedIndex >= 0 &&
+                        MosaicBoundaryNavigationPolicy.isBoundaryTile(layout.tiles, focusedIndex, direction)
+                    ) {
+                        MosaicBoundaryNavigationPolicy.switchTarget(state.activeMosaicIndex, direction)
                     } else {
                         null
-                    },
-                    modifier = Modifier
-                        .offset(x = tile.x.dp, y = tile.y.dp)
-                        .size(width = tile.width.dp, height = tile.height.dp),
-                )
+                    }
+
+                    onDirectionalActivity()
+                    if (switchTarget != null) {
+                        onMosaicBoundarySwitch(switchTarget)
+                        true
+                    } else {
+                        false
+                    }
+                },
+        ) {
+            layout.tiles.forEach { tile ->
+                val camera = state.cameras.getOrNull(tile.index) ?: return@forEach
+                key(camera.id) {
+                    val effectiveQuality = state.effectiveStreamQuality(camera.id)
+                    val autoQualityDowngraded = state.isAutoQualityDowngraded(camera.id)
+                    val request = remember(camera, effectiveQuality, state.transmissionMode) {
+                        camera.streamRequestFor(PlayerMode.Mosaic).copy(
+                            subtype = effectiveQuality.subtype,
+                            transmissionMode = state.transmissionMode,
+                        )
+                    }
+                    val rtspUrl = remember(request, rtspUrlBuilder) {
+                        rtspUrlBuilder.build(request)
+                    }
+
+                    RtspCameraTile(
+                        request = request,
+                        rtspUrl = rtspUrl,
+                        showPlayerInfo = state.showInfo,
+                        autoQualityDowngraded = autoQualityDowngraded,
+                        selectedForReorder = state.selectedForSwapId == camera.id,
+                        requestInitialFocus = camera.id == state.cameras.firstOrNull()?.id,
+                        focusEnabled = tilesFocusable,
+                        showFocusIndicator = showFocusIndicator,
+                        onMosaicHdSoftwareDecoder = onMosaicHdSoftwareDecoder,
+                        onMosaicHdDecoderFailure = onMosaicHdDecoderFailure,
+                        onVideoAspectRatioChanged = onVideoAspectRatioChanged,
+                        onFocusChanged = { focused ->
+                            if (focused) {
+                                focusedCameraId = camera.id
+                            } else if (focusedCameraId == camera.id) {
+                                focusedCameraId = null
+                            }
+                        },
+                        onClick = {
+                            onCameraClick(camera)
+                        },
+                        onLongClick = if (state.reorderMode) {
+                            { onCameraLongClick(camera) }
+                        } else {
+                            null
+                        },
+                        modifier = Modifier
+                            .offset(x = tile.x.dp, y = tile.y.dp)
+                            .size(width = tile.width.dp, height = tile.height.dp),
+                    )
+                }
             }
         }
     }
@@ -381,11 +451,27 @@ private fun CameraDeletionDialog(
     onConfirm: () -> Unit,
 ) {
     SentinelaTvDialog(
-        title = MosaicUiText.DELETE_CAMERA_CONFIRMATION,
-        message = cameraName,
+        title = MosaicUiText.REMOVE_CAMERA_FROM_MOSAIC_CONFIRMATION,
+        message = "$cameraName\n\n${MosaicUiText.REMOVE_CAMERA_FROM_MOSAIC_MESSAGE}",
         dismissLabel = "Cancelar",
         onDismiss = onDismiss,
-        confirmLabel = "Excluir",
+        confirmLabel = "Remover",
+        onConfirm = onConfirm,
+    )
+}
+
+@Composable
+private fun MosaicSwitchDialog(
+    target: MosaicSwitchTarget,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    SentinelaTvDialog(
+        title = "Trocar mosaico?",
+        message = "Abrir Mosaico ${target.toIndex + 1}. O mosaico atual será fechado para preservar desempenho.",
+        dismissLabel = "Cancelar",
+        onDismiss = onDismiss,
+        confirmLabel = "Abrir",
         onConfirm = onConfirm,
     )
 }
@@ -401,12 +487,42 @@ private fun LoadingMosaicMessage() {
 }
 
 @Composable
-private fun EmptyMosaicMessage() {
+private fun EmptyMosaicMessage(
+    hasRegisteredCameras: Boolean,
+    activeMosaicIndex: Int,
+    onMosaicBoundarySwitch: (MosaicSwitchTarget) -> Unit,
+) {
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(hasRegisteredCameras, activeMosaicIndex) {
+        if (hasRegisteredCameras) {
+            focusRequester.requestFocus()
+        }
+    }
+
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .focusRequester(focusRequester)
+            .focusable(enabled = hasRegisteredCameras)
+            .onPreviewKeyEvent { keyEvent ->
+                if (!hasRegisteredCameras || keyEvent.type != KeyEventType.KeyDown) {
+                    return@onPreviewKeyEvent false
+                }
+                val direction = keyEvent.key.mosaicNavigationDirection() ?: return@onPreviewKeyEvent false
+                val target = MosaicBoundaryNavigationPolicy.switchTarget(activeMosaicIndex, direction)
+                    ?: return@onPreviewKeyEvent false
+                onMosaicBoundarySwitch(target)
+                true
+            },
         contentAlignment = Alignment.Center,
     ) {
-        MosaicMessageCard("Nenhuma câmera cadastrada.")
+        MosaicMessageCard(
+            if (hasRegisteredCameras) {
+                "Mosaico ativo vazio. Use esquerda ou direita para trocar de mosaico."
+            } else {
+                "Nenhuma câmera cadastrada."
+            },
+        )
     }
 }
 
@@ -439,3 +555,11 @@ private fun Key.isDirectionalKey(): Boolean =
         this == Key.DirectionRight ||
         this == Key.DirectionUp ||
         this == Key.DirectionDown
+
+private fun Key.mosaicNavigationDirection(): MosaicNavigationDirection? = when (this) {
+    Key.DirectionUp -> MosaicNavigationDirection.Up
+    Key.DirectionDown -> MosaicNavigationDirection.Down
+    Key.DirectionLeft -> MosaicNavigationDirection.Left
+    Key.DirectionRight -> MosaicNavigationDirection.Right
+    else -> null
+}

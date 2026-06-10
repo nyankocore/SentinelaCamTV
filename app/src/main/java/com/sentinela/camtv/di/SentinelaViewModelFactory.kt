@@ -18,6 +18,7 @@ class SentinelaViewModelFactory(
         HomeViewModel::class.java -> HomeViewModel(container.cameraRepository)
         MosaicViewModel::class.java -> MosaicViewModel(
             cameraRepository = container.cameraRepository,
+            mosaicLayoutRepository = container.mosaicLayoutRepository,
             settingsRepository = container.settingsRepository,
         )
         FullscreenPlayerViewModel::class.java -> FullscreenPlayerViewModel(
@@ -25,6 +26,8 @@ class SentinelaViewModelFactory(
         )
         CameraManagerViewModel::class.java -> CameraManagerViewModel(
             cameraRepository = container.cameraRepository,
+            mosaicLayoutRepository = container.mosaicLayoutRepository,
+            settingsRepository = container.settingsRepository,
             onvifRepository = container.onvifRepository,
             rtspConnectionTester = container.rtspConnectionTester,
             rtspCameraDraftRepository = container.rtspCameraDraftRepository,
