@@ -10,6 +10,7 @@ data class PlayerUiPreferences(
     val fullscreenQuickMenuHintSeen: Boolean = false,
     val mosaicStreamQuality: StreamQuality = StreamQuality.SD,
     val globalTransmissionMode: TransmissionMode = TransmissionMode.MENOR_LATENCIA,
+    val activeMosaicIndex: Int = 0,
     val freeActiveCameraId: String? = null,
     val diagnosticsEnabled: Boolean = true,
     val premiumGraceUntilEpochMillis: Long = 0L,

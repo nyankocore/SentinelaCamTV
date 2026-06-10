@@ -56,6 +56,7 @@ fun RtspCameraTile(
     onMosaicHdSoftwareDecoder: (cameraId: String, reason: String) -> Unit,
     onMosaicHdDecoderFailure: (cameraId: String, reason: String) -> Unit,
     onVideoAspectRatioChanged: (cameraId: String, subtype: Int, width: Int, height: Int) -> Unit,
+    onFocusChanged: (Boolean) -> Unit = {},
     onClick: () -> Unit,
     onLongClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
@@ -189,6 +190,7 @@ fun RtspCameraTile(
             )
             .onFocusChanged { focusState ->
                 focused = focusState.isFocused
+                onFocusChanged(focusState.isFocused)
             }
             .combinedClickable(
                 enabled = focusEnabled,

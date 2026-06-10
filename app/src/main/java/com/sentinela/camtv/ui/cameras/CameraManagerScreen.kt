@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -36,6 +37,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -43,6 +45,9 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
@@ -58,6 +63,8 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.sentinela.camtv.data.mosaic.MOSAIC_COUNT
+import com.sentinela.camtv.data.mosaic.MOSAIC_MAX_SLOTS
 import com.sentinela.camtv.domain.Camera
 import com.sentinela.camtv.domain.DvrRtspChannel
 import com.sentinela.camtv.domain.OnvifCameraSource
@@ -74,6 +81,7 @@ private enum class CameraManagerTab(
     ONVIF("ONVIF"),
     RTSP("RTSP direto"),
     CONNECTED("Conectadas"),
+    MOSAICS("Mosaicos"),
 }
 
 private object CameraTextFieldId {
@@ -150,7 +158,12 @@ internal object TextFieldEditModePolicy {
 }
 
 internal const val CONNECTED_TAB_DESCRIPTION =
-    "Confira as câmeras conectadas. Para trocar posições ou excluir, use Editar mosaico no menu rápido do mosaico."
+    "Confira as câmeras conectadas. Para organizar posições, use a aba Mosaicos."
+
+private const val MOSAICS_TAB_DESCRIPTION =
+    "Organize até 3 mosaicos. Cada câmera pode ficar em apenas um slot."
+
+internal const val OUTSIDE_MOSAIC_TITLE = "Fora do mosaico"
 
 private data class CameraManagerMetrics(
     val scale: Float,
@@ -160,6 +173,7 @@ private data class CameraManagerMetrics(
     val onvifTabWidth: Dp,
     val rtspTabWidth: Dp,
     val connectedTabWidth: Dp,
+    val mosaicsTabWidth: Dp,
     val tabHeight: Dp,
     val contentTopGap: Dp,
     val contentGap: Dp,
@@ -178,6 +192,7 @@ private class CameraManagerFocusRequesters {
     val onvifTab = FocusRequester()
     val rtspTab = FocusRequester()
     val connectedTab = FocusRequester()
+    val mosaicsTab = FocusRequester()
     val firstContent = FocusRequester()
     val viewMosaic = FocusRequester()
     val onvifUsername = FocusRequester()
@@ -193,6 +208,7 @@ private class CameraManagerFocusRequesters {
             CameraManagerTab.ONVIF -> onvifTab
             CameraManagerTab.RTSP -> rtspTab
             CameraManagerTab.CONNECTED -> connectedTab
+            CameraManagerTab.MOSAICS -> mosaicsTab
         }
 }
 
@@ -214,6 +230,9 @@ fun CameraManagerScreen(
     onDismissAuthDialog: () -> Unit,
     onOpenMosaic: () -> Unit,
     onSetFreeActiveCamera: (String) -> Unit,
+    onSelectActiveMosaic: (Int) -> Unit,
+    onPlaceCameraInMosaic: (mosaicIndex: Int, slotIndex: Int, cameraId: String) -> Unit,
+    onRemoveCameraFromMosaic: (String) -> Unit,
     onBack: () -> Unit,
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(CameraManagerTab.ONVIF) }
@@ -252,6 +271,7 @@ fun CameraManagerScreen(
                     metrics = metrics,
                     focusRequesters = focusRequesters,
                     onTabSelected = { selectedTab = it },
+                    onOpenMosaic = onOpenMosaic,
                 )
 
                 Spacer(
@@ -301,6 +321,14 @@ fun CameraManagerScreen(
                         onOpenMosaic = onOpenMosaic,
                         onSetFreeActiveCamera = onSetFreeActiveCamera,
                     )
+                    CameraManagerTab.MOSAICS -> MosaicsTab(
+                        state = state,
+                        metrics = metrics,
+                        focusRequesters = focusRequesters,
+                        onSelectActiveMosaic = onSelectActiveMosaic,
+                        onPlaceCameraInMosaic = onPlaceCameraInMosaic,
+                        onRemoveCameraFromMosaic = onRemoveCameraFromMosaic,
+                    )
                 }
             }
 
@@ -308,7 +336,17 @@ fun CameraManagerScreen(
                 SentinelaTvDialog(
                     title = cameraDialogTitle(message),
                     message = message,
-                    onConfirm = onDismissAuthDialog,
+                    confirmLabel = if (state.authDialogAction == CameraManagerDialogAction.ORGANIZE_MOSAIC) {
+                        "Organizar mosaico"
+                    } else {
+                        "OK"
+                    },
+                    onConfirm = {
+                        onDismissAuthDialog()
+                        if (state.authDialogAction == CameraManagerDialogAction.ORGANIZE_MOSAIC) {
+                            selectedTab = CameraManagerTab.MOSAICS
+                        }
+                    },
                 )
             }
         }
@@ -320,6 +358,7 @@ private fun CameraManagerHeader(
     metrics: CameraManagerMetrics,
     focusRequesters: CameraManagerFocusRequesters,
     onTabSelected: (CameraManagerTab) -> Unit,
+    onOpenMosaic: () -> Unit,
 ) {
     Column {
         TitleText("Adicione câmeras por ONVIF ou RTSP direto.", metrics)
@@ -327,8 +366,10 @@ private fun CameraManagerHeader(
         Row(
             modifier = Modifier
                 .focusGroup()
+                .fillMaxWidth()
                 .padding(bottom = metrics.dp(20f)),
             horizontalArrangement = Arrangement.spacedBy(metrics.headerTabsGap),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             CameraManagerTab.entries.forEach { tab ->
                 SentinelaTab(
@@ -344,6 +385,18 @@ private fun CameraManagerHeader(
                     onClick = { onTabSelected(tab) },
                 )
             }
+            SentinelaActionButton(
+                label = "Ver câmeras",
+                onClick = onOpenMosaic,
+                width = metrics.dp(176f),
+                height = metrics.tabHeight,
+                metrics = metrics,
+                modifier = Modifier
+                    .focusRequester(focusRequesters.viewMosaic)
+                    .focusProperties {
+                        down = focusRequesters.firstContent
+                    },
+            )
         }
     }
 }
@@ -740,19 +793,254 @@ private fun ConnectedTab(
                 Spacer(Modifier.height(metrics.dp(12f)))
                 PanelText("Modo grátis: 1 câmera ativa", metrics)
             }
-            Spacer(Modifier.height(metrics.dp(88f)))
-            SentinelaActionButton(
-                label = "Ver câmeras",
-                onClick = onOpenMosaic,
-                width = metrics.dp(240f),
-                height = metrics.dp(56f),
+        }
+    }
+}
+
+@Composable
+private fun MosaicsTab(
+    state: CameraManagerUiState,
+    metrics: CameraManagerMetrics,
+    focusRequesters: CameraManagerFocusRequesters,
+    onSelectActiveMosaic: (Int) -> Unit,
+    onPlaceCameraInMosaic: (mosaicIndex: Int, slotIndex: Int, cameraId: String) -> Unit,
+    onRemoveCameraFromMosaic: (String) -> Unit,
+) {
+    var selectedCameraId by rememberSaveable { mutableStateOf<String?>(null) }
+    val selectedCamera = state.cameras.firstOrNull { camera -> camera.id == selectedCameraId }
+    val selectedIsAssigned = selectedCameraId != null &&
+        state.mosaicSlots.any { slot -> slot.cameraId == selectedCameraId }
+
+    LaunchedEffect(state.activeMosaicIndex) {
+        selectedCameraId = null
+    }
+    LaunchedEffect(state.cameras, state.mosaicSlots) {
+        if (selectedCameraId != null && state.cameras.none { camera -> camera.id == selectedCameraId }) {
+            selectedCameraId = null
+        }
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(metrics.contentGap),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Column(
+            modifier = Modifier.width(metrics.leftWidth),
+        ) {
+            SectionHeading("Mosaicos", metrics)
+            SectionDescription(MOSAICS_TAB_DESCRIPTION, metrics)
+            Spacer(Modifier.height(metrics.dp(14f)))
+            Row(horizontalArrangement = Arrangement.spacedBy(metrics.dp(12f))) {
+                repeat(MOSAIC_COUNT) { index ->
+                    SentinelaActionButton(
+                        label = "Mosaico ${index + 1}",
+                        onClick = { onSelectActiveMosaic(index) },
+                        width = metrics.dp(150f),
+                        height = metrics.dp(48f),
+                        metrics = metrics,
+                        modifier = if (index == 0) {
+                            Modifier.focusRequester(focusRequesters.firstContent)
+                        } else {
+                            Modifier
+                        },
+                        selected = index == state.activeMosaicIndex,
+                    )
+                }
+            }
+            Spacer(Modifier.height(metrics.dp(20f)))
+            SectionDescription(
+                text = selectedCamera?.let { camera ->
+                    "Selecionada: ${camera.name}. Escolha um slot para mover ou trocar."
+                } ?: "Selecione uma câmera e escolha o slot de destino.",
                 metrics = metrics,
-                modifier = Modifier
-                    .focusRequester(focusRequesters.viewMosaic)
-                    .focusProperties {
-                        left = focusRequesters.firstContent
-                        up = focusRequesters.connectedTab
+            )
+            Spacer(Modifier.height(metrics.dp(12f)))
+            MosaicSlotsGrid(
+                state = state,
+                selectedCameraId = selectedCameraId,
+                metrics = metrics,
+                onSlotClick = { slotIndex, camera ->
+                    val selectedId = selectedCameraId
+                    if (selectedId != null) {
+                        onPlaceCameraInMosaic(state.activeMosaicIndex, slotIndex, selectedId)
+                        selectedCameraId = null
+                    } else if (camera != null) {
+                        selectedCameraId = camera.id
+                    }
+                },
+            )
+        }
+
+        Column(
+            modifier = Modifier.width(metrics.rightWidth),
+        ) {
+            SectionHeading(OUTSIDE_MOSAIC_TITLE, metrics)
+            SectionDescription("Câmeras cadastradas que ainda não ocupam um slot.", metrics)
+            Spacer(Modifier.height(metrics.dp(10f)))
+            val unassigned = state.unassignedCameras()
+            LazyColumn(
+                modifier = Modifier.height(metrics.dp(150f)),
+                verticalArrangement = Arrangement.spacedBy(metrics.dp(8f)),
+            ) {
+                if (unassigned.isEmpty()) {
+                    item {
+                        CameraListItem(
+                            title = "Nenhuma câmera",
+                            subtitle = "Todas as câmeras estão em um mosaico.",
+                            height = metrics.rowCardHeight,
+                            metrics = metrics,
+                        )
+                    }
+                } else {
+                    itemsIndexed(
+                        items = unassigned,
+                        key = { _, camera -> camera.id },
+                    ) { _, camera ->
+                        CameraListItem(
+                            title = camera.name,
+                            subtitle = if (camera.id == selectedCameraId) {
+                                "selecionada"
+                            } else {
+                                "${camera.source.connectedLabel()} - pressione OK para posicionar"
+                            },
+                            height = metrics.rowCardHeight,
+                            metrics = metrics,
+                            onClick = { selectedCameraId = camera.id },
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(metrics.dp(12f)))
+            StatusCard(
+                title = "Resumo",
+                message = mosaicSummaryText(state),
+                width = metrics.statusCardWidth,
+                height = metrics.dp(116f),
+                metrics = metrics,
+            )
+            Spacer(Modifier.height(metrics.dp(12f)))
+            SentinelaActionButton(
+                label = "Remover do mosaico",
+                onClick = {
+                    selectedCameraId?.let(onRemoveCameraFromMosaic)
+                    selectedCameraId = null
+                },
+                enabled = selectedIsAssigned,
+                width = metrics.statusCardWidth,
+                height = metrics.dp(54f),
+                metrics = metrics,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MosaicSlotsGrid(
+    state: CameraManagerUiState,
+    selectedCameraId: String?,
+    metrics: CameraManagerMetrics,
+    onSlotClick: (slotIndex: Int, camera: Camera?) -> Unit,
+) {
+    val slotWidth = (metrics.leftWidth - metrics.dp(36f)) / 5
+    Column(
+        verticalArrangement = Arrangement.spacedBy(metrics.dp(8f)),
+    ) {
+        repeat(3) { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(metrics.dp(9f))) {
+                repeat(5) { column ->
+                    val slotIndex = row * 5 + column
+                    val camera = state.cameraInSlot(state.activeMosaicIndex, slotIndex)
+                    MosaicSlotButton(
+                        slotNumber = slotIndex + 1,
+                        camera = camera,
+                        selected = isMosaicSlotSelected(camera?.id, selectedCameraId),
+                        width = slotWidth,
+                        height = metrics.dp(70f),
+                        metrics = metrics,
+                        onClick = { onSlotClick(slotIndex, camera) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MosaicSlotButton(
+    slotNumber: Int,
+    camera: Camera?,
+    selected: Boolean,
+    width: Dp,
+    height: Dp,
+    metrics: CameraManagerMetrics,
+    onClick: () -> Unit,
+) {
+    var focused by remember { mutableStateOf(false) }
+    val occupied = camera != null
+    val shape = RoundedCornerShape(metrics.dp(8f))
+    val borderColor = when {
+        focused -> MaterialTheme.colorScheme.primary
+        selected -> MaterialTheme.colorScheme.primary
+        occupied -> SentinelaTvColors.fieldBorder
+        else -> Color.Transparent
+    }
+    val backgroundColor = when {
+        selected -> SentinelaTvColors.controlSelected
+        occupied -> SentinelaTvColors.control
+        else -> SentinelaTvColors.panel.copy(alpha = 0.62f)
+    }
+
+    Box(
+        modifier = Modifier
+            .width(width)
+            .height(height)
+            .onFocusChanged { focused = it.isFocused }
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyUp && event.key.isConfirmKey()) {
+                    onClick()
+                    true
+                } else {
+                    false
+                }
+            }
+            .semantics { role = Role.Button }
+            .background(backgroundColor, shape)
+            .border(
+                width = if (focused || selected) SentinelaTvSize.focusBorder else 1.dp,
+                color = borderColor,
+                shape = shape,
+            )
+            .padding(horizontal = metrics.dp(10f), vertical = metrics.dp(8f))
+            .focusable(),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = slotNumber.toString(),
+                style = TextStyle(
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = metrics.sp(14f),
+                    lineHeight = metrics.sp(16f),
+                    fontWeight = FontWeight.Bold,
+                ),
+            )
+            Text(
+                text = camera?.name ?: "Vazio",
+                style = TextStyle(
+                    color = if (occupied) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        SentinelaTvColors.mutedText
                     },
+                    fontSize = metrics.sp(16f),
+                    lineHeight = metrics.sp(19f),
+                    fontWeight = FontWeight.Bold,
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -874,6 +1162,7 @@ private fun SentinelaActionButton(
     metrics: CameraManagerMetrics,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    selected: Boolean = false,
 ) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(metrics.dp(24f))
@@ -885,8 +1174,12 @@ private fun SentinelaActionButton(
             .height(height)
             .onFocusChanged { focused = it.isFocused }
             .border(
-                width = if (focused) SentinelaTvSize.focusBorder else 1.dp,
-                color = if (focused) MaterialTheme.colorScheme.primary else SentinelaTvColors.control,
+                width = if (focused || selected) SentinelaTvSize.focusBorder else 1.dp,
+                color = when {
+                    focused -> MaterialTheme.colorScheme.primary
+                    selected -> MaterialTheme.colorScheme.primary
+                    else -> SentinelaTvColors.control
+                },
                 shape = shape,
             )
             .onPreviewKeyEvent { event ->
@@ -1241,6 +1534,8 @@ private fun CameraListItem(
                     lineHeight = metrics.sp(25f),
                     fontWeight = FontWeight.Bold,
                 ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = subtitle,
@@ -1406,6 +1701,7 @@ private fun cameraManagerMetrics(
         onvifTabWidth = dp(126f),
         rtspTabWidth = dp(176f),
         connectedTabWidth = dp(170f),
+        mosaicsTabWidth = dp(150f),
         tabHeight = dp(50f),
         contentTopGap = dp(30f),
         contentGap = dp(28f),
@@ -1430,13 +1726,48 @@ private fun CameraManagerMetrics.tabWidth(tab: CameraManagerTab): Dp =
         CameraManagerTab.ONVIF -> onvifTabWidth
         CameraManagerTab.RTSP -> rtspTabWidth
         CameraManagerTab.CONNECTED -> connectedTabWidth
+        CameraManagerTab.MOSAICS -> mosaicsTabWidth
+    }
+
+private fun CameraManagerUiState.cameraInSlot(
+    mosaicIndex: Int,
+    slotIndex: Int,
+): Camera? {
+    val cameraId = mosaicSlots.firstOrNull { slot ->
+        slot.mosaicIndex == mosaicIndex && slot.slotIndex == slotIndex
+    }?.cameraId ?: return null
+    return cameras.firstOrNull { camera -> camera.id == cameraId }
+}
+
+private fun CameraManagerUiState.unassignedCameras(): List<Camera> {
+    val assignedIds = mosaicSlots.mapTo(mutableSetOf()) { slot -> slot.cameraId }
+    return connectedCamerasForDisplay(cameras).filterNot { camera -> camera.id in assignedIds }
+}
+
+internal fun isMosaicSlotSelected(
+    cameraId: String?,
+    selectedCameraId: String?,
+): Boolean =
+    cameraId != null && cameraId == selectedCameraId
+
+internal fun mosaicSummaryText(state: CameraManagerUiState): String =
+    buildString {
+        repeat(MOSAIC_COUNT) { index ->
+            if (index > 0) append('\n')
+            val count = state.mosaicSlots.count { slot -> slot.mosaicIndex == index }
+            append("Mosaico ${index + 1}: $count câmera")
+            if (count != 1) append('s')
+        }
+        val unassignedCount = state.unassignedCameras().size
+        append("\n$OUTSIDE_MOSAIC_TITLE: $unassignedCount câmera")
+        if (unassignedCount != 1) append('s')
     }
 
 internal fun cameraDialogTitle(message: String): String =
     when {
         message.contains("modo grátis", ignoreCase = true) ||
             message.contains("atualizada", ignoreCase = true) -> "Câmera ativa atualizada"
-        message.contains("conectada", ignoreCase = true) -> "Câmera conectada"
+        message.contains("conectada", ignoreCase = true) -> "Câmera(s) conectada(s)"
         message.contains("ONVIF", ignoreCase = true) -> "Falha ONVIF"
         else -> "Falha ao conectar câmera"
     }

@@ -102,6 +102,9 @@ fun SentinelaAppScreen() {
                     onDismissAuthDialog = cameraManagerViewModel::dismissAuthDialog,
                     onOpenMosaic = appViewModel::openMosaic,
                     onSetFreeActiveCamera = cameraManagerViewModel::setFreeActiveCamera,
+                    onSelectActiveMosaic = cameraManagerViewModel::selectActiveMosaic,
+                    onPlaceCameraInMosaic = cameraManagerViewModel::placeCameraInMosaic,
+                    onRemoveCameraFromMosaic = cameraManagerViewModel::removeCameraFromMosaic,
                     onBack = appViewModel::goBack,
                 )
             }

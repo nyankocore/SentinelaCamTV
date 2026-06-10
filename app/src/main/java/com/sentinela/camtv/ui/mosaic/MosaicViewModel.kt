@@ -3,6 +3,9 @@ package com.sentinela.camtv.ui.mosaic
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sentinela.camtv.data.camera.CameraRepository
+import com.sentinela.camtv.data.mosaic.MOSAIC_COUNT
+import com.sentinela.camtv.data.mosaic.MosaicLayoutRepository
+import com.sentinela.camtv.data.mosaic.MosaicSlot
 import com.sentinela.camtv.domain.Camera
 import com.sentinela.camtv.entitlement.EntitlementRepository
 import com.sentinela.camtv.entitlement.EntitlementState
@@ -25,7 +28,9 @@ import timber.log.Timber
 data class MosaicUiState(
     val cameras: List<Camera> = emptyList(),
     val allCameraCount: Int = 0,
+    val registeredCameraCount: Int = 0,
     val isLoading: Boolean = true,
+    val activeMosaicIndex: Int = 0,
     val freeLimitActive: Boolean = false,
     val freeActiveCameraId: String? = null,
     val showInfo: Boolean = true,
@@ -52,7 +57,9 @@ data class MosaicUiState(
 private data class MosaicCoreState(
     val cameras: List<Camera>,
     val allCameraCount: Int,
+    val registeredCameraCount: Int,
     val isLoading: Boolean,
+    val activeMosaicIndex: Int,
     val entitlement: EntitlementState,
     val preferences: PlayerUiPreferences,
     val quickMenuVisible: Boolean,
@@ -65,6 +72,11 @@ private data class CameraAccessState(
     val entitlement: EntitlementState,
 )
 
+private data class MosaicLayoutPreferencesState(
+    val slots: List<MosaicSlot>,
+    val preferences: PlayerUiPreferences,
+)
+
 private sealed interface CameraListState {
     data object Loading : CameraListState
     data class Loaded(val cameras: List<Camera>) : CameraListState
@@ -72,6 +84,7 @@ private sealed interface CameraListState {
 
 class MosaicViewModel(
     private val cameraRepository: CameraRepository,
+    private val mosaicLayoutRepository: MosaicLayoutRepository,
     private val settingsRepository: SettingsRepository,
     private val entitlementRepository: EntitlementRepository,
 ) : ViewModel() {
@@ -93,22 +106,37 @@ class MosaicViewModel(
         CameraAccessState(cameraState, entitlement)
     }
 
+    private val layoutPreferencesState = combine(
+        mosaicLayoutRepository.observeAllSlots(),
+        settingsRepository.observePreferences(),
+    ) { slots, preferences ->
+        MosaicLayoutPreferencesState(slots, preferences)
+    }
+
     private val coreState = combine(
         cameraAccessState,
-        settingsRepository.observePreferences(),
+        layoutPreferencesState,
         quickMenuVisible,
         reorderMode,
         selectedForSwapId,
-    ) { accessState, preferences, menuVisible, reorder, selectedId ->
+    ) { accessState, layoutPreferences, menuVisible, reorder, selectedId ->
         val allCameras = when (val cameraState = accessState.cameraState) {
             is CameraListState.Loaded -> cameraState.cameras
             CameraListState.Loading -> emptyList()
         }
-        val cameras = allCameras.visibleFor(accessState.entitlement)
+        val preferences = layoutPreferences.preferences
+        val activeMosaicIndex = preferences.activeMosaicIndex.coerceIn(0, MOSAIC_COUNT - 1)
+        val layoutCameras = allCameras.camerasForMosaic(
+            slots = layoutPreferences.slots,
+            mosaicIndex = activeMosaicIndex,
+        )
+        val cameras = layoutCameras.visibleFor(accessState.entitlement)
         MosaicCoreState(
             cameras = cameras,
-            allCameraCount = allCameras.size,
+            allCameraCount = layoutCameras.size,
+            registeredCameraCount = allCameras.size,
             isLoading = accessState.cameraState == CameraListState.Loading,
+            activeMosaicIndex = activeMosaicIndex,
             entitlement = accessState.entitlement,
             preferences = preferences,
             quickMenuVisible = menuVisible,
@@ -128,7 +156,9 @@ class MosaicViewModel(
         MosaicUiState(
             cameras = core.cameras,
             allCameraCount = core.allCameraCount,
+            registeredCameraCount = core.registeredCameraCount,
             isLoading = core.isLoading,
+            activeMosaicIndex = core.activeMosaicIndex,
             freeLimitActive = core.entitlement.freeLimitActive,
             freeActiveCameraId = core.entitlement.freeActiveCameraId,
             showInfo = core.preferences.showMosaicInfo,
@@ -180,15 +210,9 @@ class MosaicViewModel(
             return
         }
 
-        val reordered = state.value.cameras.toMutableList()
-        val firstIndex = reordered.indexOfFirst { it.id == firstId }
-        val secondIndex = reordered.indexOfFirst { it.id == camera.id }
-        if (firstIndex >= 0 && secondIndex >= 0) {
-            val temp = reordered[firstIndex]
-            reordered[firstIndex] = reordered[secondIndex]
-            reordered[secondIndex] = temp
+        if (state.value.cameras.any { it.id == firstId } && state.value.cameras.any { it.id == camera.id }) {
             viewModelScope.launch {
-                cameraRepository.updateCameraOrder(reordered.map { it.id })
+                mosaicLayoutRepository.swapCameras(firstId, camera.id)
             }
         }
         selectedForSwapId.value = null
@@ -301,7 +325,22 @@ class MosaicViewModel(
         hdDecoderFailureCounts.remove(cameraId)
         autoQualityOverrides.value = autoQualityOverrides.value - cameraId
         viewModelScope.launch {
-            cameraRepository.deleteCamera(cameraId)
+            mosaicLayoutRepository.removeCameraFromLayout(cameraId)
+        }
+    }
+
+    fun switchToMosaic(index: Int) {
+        val targetIndex = index.coerceIn(0, MOSAIC_COUNT - 1)
+        if (targetIndex == state.value.activeMosaicIndex) return
+        quickMenuVisible.value = false
+        reorderMode.value = false
+        selectedForSwapId.value = null
+        cameraPendingDeletionId.value = null
+        fullscreenCameraId.value = null
+        hdDecoderFailureCounts.clear()
+        autoQualityOverrides.value = emptyMap()
+        viewModelScope.launch {
+            settingsRepository.setActiveMosaicIndex(targetIndex)
         }
     }
 
@@ -318,4 +357,17 @@ private fun List<Camera>.visibleFor(entitlement: EntitlementState): List<Camera>
         entitlement = entitlement,
     ).toSet()
     return filter { it.id in visibleIds }
+}
+
+private fun List<Camera>.camerasForMosaic(
+    slots: List<MosaicSlot>,
+    mosaicIndex: Int,
+): List<Camera> {
+    val camerasById = associateBy { camera -> camera.id }
+    return slots
+        .asSequence()
+        .filter { slot -> slot.mosaicIndex == mosaicIndex }
+        .sortedBy { slot -> slot.slotIndex }
+        .mapNotNull { slot -> camerasById[slot.cameraId] }
+        .toList()
 }

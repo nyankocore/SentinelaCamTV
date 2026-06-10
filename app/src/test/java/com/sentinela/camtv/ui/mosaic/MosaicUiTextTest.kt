@@ -7,16 +7,20 @@ class MosaicUiTextTest {
     @Test
     fun reorderHintExplainsSwapDeleteAndBack() {
         assertEquals(
-            "Selecione duas câmeras para trocar. Pressione OK por alguns segundos para excluir uma câmera. Pressione Back para concluir.",
+            "Selecione duas câmeras para trocar. Pressione OK por alguns segundos para remover uma câmera do mosaico. Pressione Back para concluir.",
             MosaicUiText.REORDER_HINT,
         )
     }
 
     @Test
-    fun deleteConfirmationMakesSingleCameraScopeClear() {
+    fun removalConfirmationKeepsCameraRegistered() {
         assertEquals(
-            "Excluir câmera? Apenas esta câmera será removida.",
-            MosaicUiText.DELETE_CAMERA_CONFIRMATION,
+            "Remover do mosaico?",
+            MosaicUiText.REMOVE_CAMERA_FROM_MOSAIC_CONFIRMATION,
+        )
+        assertEquals(
+            "A câmera continuará cadastrada.",
+            MosaicUiText.REMOVE_CAMERA_FROM_MOSAIC_MESSAGE,
         )
     }
 }

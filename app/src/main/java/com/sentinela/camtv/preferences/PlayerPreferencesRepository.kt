@@ -5,9 +5,11 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.sentinela.camtv.data.mosaic.MOSAIC_COUNT
 import com.sentinela.camtv.player.StreamQuality
 import com.sentinela.camtv.player.TransmissionMode
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +34,7 @@ class PlayerPreferencesRepository(
             globalTransmissionMode = preferences[GLOBAL_TRANSMISSION_MODE]
                 ?.let { value -> runCatching { TransmissionMode.valueOf(value) }.getOrNull() }
                 ?: TransmissionMode.MENOR_LATENCIA,
+            activeMosaicIndex = (preferences[ACTIVE_MOSAIC_INDEX] ?: 0).coerceIn(0, MOSAIC_COUNT - 1),
             freeActiveCameraId = preferences[FREE_ACTIVE_CAMERA_ID],
             diagnosticsEnabled = preferences[DIAGNOSTICS_ENABLED] ?: true,
             premiumGraceUntilEpochMillis = preferences[PREMIUM_GRACE_UNTIL_EPOCH_MILLIS] ?: 0L,
@@ -78,6 +81,12 @@ class PlayerPreferencesRepository(
         }
     }
 
+    override suspend fun setActiveMosaicIndex(index: Int) {
+        dataStore.edit { preferences ->
+            preferences[ACTIVE_MOSAIC_INDEX] = index.coerceIn(0, MOSAIC_COUNT - 1)
+        }
+    }
+
     override suspend fun setFreeActiveCameraId(cameraId: String?) {
         dataStore.edit { preferences ->
             if (cameraId == null) {
@@ -107,6 +116,7 @@ class PlayerPreferencesRepository(
         val FULLSCREEN_QUICK_MENU_HINT_SEEN = booleanPreferencesKey("fullscreen_quick_menu_hint_seen")
         val MOSAIC_STREAM_QUALITY = stringPreferencesKey("mosaic_stream_quality")
         val GLOBAL_TRANSMISSION_MODE = stringPreferencesKey("global_transmission_mode")
+        val ACTIVE_MOSAIC_INDEX = intPreferencesKey("active_mosaic_index")
         val FREE_ACTIVE_CAMERA_ID = stringPreferencesKey("free_active_camera_id")
         val DIAGNOSTICS_ENABLED = booleanPreferencesKey("diagnostics_enabled")
         val PREMIUM_GRACE_UNTIL_EPOCH_MILLIS = longPreferencesKey("premium_grace_until_epoch_millis")
