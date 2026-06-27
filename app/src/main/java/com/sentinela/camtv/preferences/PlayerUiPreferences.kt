@@ -11,4 +11,5 @@ data class PlayerUiPreferences(
     val mosaicStreamQuality: StreamQuality = StreamQuality.SD,
     val globalTransmissionMode: TransmissionMode = TransmissionMode.MENOR_LATENCIA,
     val activeMosaicIndex: Int = 0,
+    val photoCaptureTreeUri: String? = null,
 )

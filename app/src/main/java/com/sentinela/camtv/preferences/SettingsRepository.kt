@@ -13,4 +13,5 @@ interface SettingsRepository {
     suspend fun setMosaicStreamQuality(streamQuality: StreamQuality)
     suspend fun setGlobalTransmissionMode(transmissionMode: TransmissionMode)
     suspend fun setActiveMosaicIndex(index: Int)
+    suspend fun setPhotoCaptureTreeUri(uri: String?)
 }

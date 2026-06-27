@@ -60,6 +60,28 @@ class AppNavigatorTest {
     }
 
     @Test
+    fun capturesReturnsToMosaicWhenOpenedFromMosaic() {
+        val navigator = AppNavigator()
+        navigator.initialize(hasCameras = true)
+
+        navigator.openCaptures()
+        navigator.goBack()
+
+        assertEquals(AppDestination.Mosaic, navigator.state.destination)
+    }
+
+    @Test
+    fun capturesReturnsToHomeWhenOpenedFromHome() {
+        val navigator = AppNavigator()
+        navigator.initialize(hasCameras = false)
+
+        navigator.openCaptures()
+        navigator.goBack()
+
+        assertEquals(AppDestination.Home, navigator.state.destination)
+    }
+
+    @Test
     fun returnToMosaicStaysValidWhenCamerasDisappear() {
         val navigator = AppNavigator()
         navigator.initialize(hasCameras = true)

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -17,6 +18,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +32,10 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.ui.PlayerView
+import com.sentinela.camtv.capture.CaptureRepository
+import com.sentinela.camtv.capture.CaptureRequest
+import com.sentinela.camtv.capture.userMessage as captureUserMessage
 import com.sentinela.camtv.config.AppDvrConfig
 import com.sentinela.camtv.config.DvrConnectionConfig
 import com.sentinela.camtv.config.isConfigured
@@ -38,6 +44,10 @@ import com.sentinela.camtv.domain.DvrRtspChannel
 import com.sentinela.camtv.player.DvrRtspUrlBuilder
 import com.sentinela.camtv.player.PlayerMode
 import com.sentinela.camtv.player.streamRequestFor
+import com.sentinela.camtv.recording.RecordingProbeRepository
+import com.sentinela.camtv.recording.RecordingProbeRequest
+import com.sentinela.camtv.recording.RecordingStopSignal
+import com.sentinela.camtv.recording.userMessage as recordingUserMessage
 import com.sentinela.camtv.ui.common.QuickMenu
 import com.sentinela.camtv.ui.common.QuickMenuAction
 import com.sentinela.camtv.ui.design.SentinelaOverlayCard
@@ -49,7 +59,9 @@ import com.sentinela.camtv.ui.labels.streamQualityLabel
 import com.sentinela.camtv.ui.labels.transmissionModeMenuLabel
 import com.sentinela.camtv.ui.player.FullscreenCameraScreen
 import com.sentinela.camtv.ui.player.FullscreenPlayerViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private const val CAMERA_FOCUS_HIDE_DELAY_MS = 5_000L
 
@@ -57,8 +69,9 @@ private const val CAMERA_FOCUS_HIDE_DELAY_MS = 5_000L
 fun MosaicScreen(
     viewModelFactory: ViewModelProvider.Factory,
     onOpenHome: () -> Unit,
-    onOpenSettings: () -> Unit,
     onExitApp: () -> Unit,
+    captureRepository: CaptureRepository? = null,
+    recordingProbeRepository: RecordingProbeRepository? = null,
     dvrConfig: DvrConnectionConfig = AppDvrConfig.localDebugDvr,
 ) {
     val mosaicViewModel: MosaicViewModel = viewModel(factory = viewModelFactory)
@@ -72,6 +85,12 @@ fun MosaicScreen(
     var focusActivityToken by remember { mutableIntStateOf(0) }
     var videoAspectRatios by remember { mutableStateOf<Map<MosaicAspectRatioKey, Float>>(emptyMap()) }
     var pendingMosaicSwitch by remember { mutableStateOf<MosaicSwitchTarget?>(null) }
+    var fullscreenPlayerView by remember { mutableStateOf<PlayerView?>(null) }
+    var fullscreenRenderedFirstFrame by remember { mutableStateOf(false) }
+    var fullscreenMessage by remember { mutableStateOf<String?>(null) }
+    var recordingStopSignal by remember { mutableStateOf<RecordingStopSignal?>(null) }
+    var recordingJob by remember { mutableStateOf<Job?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     BackHandler {
         if (shouldReturnHomeOnMosaicBack(state)) {
@@ -95,7 +114,18 @@ fun MosaicScreen(
 
     val fullscreenCamera = state.fullscreenCamera
     LaunchedEffect(fullscreenCamera?.id) {
+        recordingStopSignal?.stop()
         fullscreenCamera?.let(fullscreenViewModel::open)
+        fullscreenPlayerView = null
+        fullscreenRenderedFirstFrame = false
+        fullscreenMessage = null
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            recordingStopSignal?.stop()
+            recordingJob?.cancel()
+        }
     }
 
     fun showCameraFocus() {
@@ -127,10 +157,71 @@ fun MosaicScreen(
         }
 
         if (fullscreenCamera != null) {
+            val fullscreenRequest = fullscreenState.streamRequest()
+            val fullscreenRtspUrl = fullscreenRequest?.let(rtspUrlBuilder::build)
+
+            fun showFullscreenMessage(message: String) {
+                fullscreenMessage = message
+            }
+
+            fun takeFullscreenPhoto() {
+                val repository = captureRepository
+                val camera = fullscreenState.camera
+                if (repository == null || camera == null) {
+                    showFullscreenMessage("Não foi possível capturar a imagem da câmera agora.")
+                    return
+                }
+                coroutineScope.launch {
+                    showFullscreenMessage("Salvando foto...")
+                    val result = repository.takePhoto(
+                        request = CaptureRequest(
+                            cameraName = camera.name,
+                            renderedFirstFrame = fullscreenRenderedFirstFrame,
+                        ),
+                        playerView = fullscreenPlayerView,
+                    )
+                    showFullscreenMessage(result.captureUserMessage())
+                }
+            }
+
+            fun startRecordingProbe() {
+                val repository = recordingProbeRepository
+                val camera = fullscreenState.camera
+                val rtspUrl = fullscreenRtspUrl
+                if (repository == null || camera == null || rtspUrl.isNullOrBlank()) {
+                    showFullscreenMessage("Gravação indisponível agora.")
+                    return
+                }
+                if (recordingJob?.isActive == true) {
+                    return
+                }
+                val stopSignal = RecordingStopSignal()
+                recordingStopSignal = stopSignal
+                recordingJob = coroutineScope.launch {
+                    showFullscreenMessage("Gravando vídeo...")
+                    val result = repository.recordVideoProbe(
+                        request = RecordingProbeRequest(
+                            cameraName = camera.name,
+                            rtspUrl = rtspUrl,
+                        ),
+                        stopSignal = stopSignal,
+                    )
+                    showFullscreenMessage(result.recordingUserMessage())
+                    recordingStopSignal = null
+                    recordingJob = null
+                }
+            }
+
+            fun stopRecordingProbe() {
+                recordingStopSignal?.stop()
+                showFullscreenMessage("Finalizando gravação...")
+            }
+
             FullscreenCameraScreen(
                 state = fullscreenState,
                 rtspUrlBuilder = rtspUrlBuilder,
                 onExit = {
+                    recordingStopSignal?.stop()
                     fullscreenViewModel.dismissQuickMenu()
                     mosaicViewModel.closeFullscreen()
                 },
@@ -140,20 +231,27 @@ fun MosaicScreen(
                 onToggleStreamQuality = fullscreenViewModel::toggleStreamQuality,
                 onToggleInfo = fullscreenViewModel::toggleInfo,
                 onToggleTransmissionMode = fullscreenViewModel::toggleTransmissionMode,
+                onTakePhoto = ::takeFullscreenPhoto,
+                recordingProbeActive = recordingJob?.isActive == true,
+                onStartRecordingProbe = ::startRecordingProbe,
+                onStopRecordingProbe = ::stopRecordingProbe,
+                transientMessage = fullscreenMessage,
+                onTransientMessageTimeout = { fullscreenMessage = null },
+                onPlayerViewChanged = { playerView -> fullscreenPlayerView = playerView },
+                onRenderedFirstFrameChanged = { rendered -> fullscreenRenderedFirstFrame = rendered },
                 onOpenHome = {
+                    recordingStopSignal?.stop()
                     fullscreenViewModel.dismissQuickMenu()
                     mosaicViewModel.closeFullscreen()
                     onOpenHome()
                 },
-                onOpenSettings = {
-                    fullscreenViewModel.dismissQuickMenu()
-                    mosaicViewModel.closeFullscreen()
-                    onOpenSettings()
-                },
                 onNavigateDirection = { direction ->
                     mosaicViewModel.navigateFullscreen(direction, navigationLayout)
                 },
-                onExitApp = onExitApp,
+                onExitApp = {
+                    recordingStopSignal?.stop()
+                    onExitApp()
+                },
                 onQuickMenuHintShown = fullscreenViewModel::markQuickMenuHintSeen,
                 modifier = Modifier.fillMaxSize(),
             )
@@ -233,10 +331,6 @@ fun MosaicScreen(
                     mosaicViewModel.dismissQuickMenu()
                     onOpenHome()
                 },
-                onOpenSettings = {
-                    mosaicViewModel.dismissQuickMenu()
-                    onOpenSettings()
-                },
                 modifier = Modifier.align(Alignment.Center),
             )
         }
@@ -266,13 +360,11 @@ fun MosaicScreen(
 fun SentinelaCamTvScreen(
     viewModelFactory: ViewModelProvider.Factory,
     onOpenHome: () -> Unit,
-    onOpenSettings: () -> Unit,
     onExitApp: () -> Unit,
 ) {
     MosaicScreen(
         viewModelFactory = viewModelFactory,
         onOpenHome = onOpenHome,
-        onOpenSettings = onOpenSettings,
         onExitApp = onExitApp,
     )
 }
@@ -416,7 +508,6 @@ private fun MosaicQuickMenu(
     onStartReorder: () -> Unit,
     onToggleTransmissionMode: () -> Unit,
     onOpenHome: () -> Unit,
-    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     QuickMenu(
@@ -427,7 +518,6 @@ private fun MosaicQuickMenu(
             QuickMenuAction("Editar mosaico", onStartReorder),
             QuickMenuAction(transmissionModeMenuLabel(state.transmissionMode), onToggleTransmissionMode),
             QuickMenuAction("Ir para início", onOpenHome),
-            QuickMenuAction("Ir para suporte", onOpenSettings),
         ),
         modifier = modifier,
     )

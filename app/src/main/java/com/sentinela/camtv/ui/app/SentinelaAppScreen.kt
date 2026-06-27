@@ -3,6 +3,9 @@ package com.sentinela.camtv.ui.app
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,10 +22,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.sentinela.camtv.BuildConfig
 import com.sentinela.camtv.SentinelaApplication
 import com.sentinela.camtv.di.SentinelaViewModelFactory
 import com.sentinela.camtv.ui.cameras.CameraManagerScreen
 import com.sentinela.camtv.ui.cameras.CameraManagerViewModel
+import com.sentinela.camtv.ui.capturegallery.CapturesScreen
+import com.sentinela.camtv.ui.capturegallery.CapturesViewModel
 import com.sentinela.camtv.ui.home.HomeScreen
 import com.sentinela.camtv.ui.mosaic.MosaicScreen
 import com.sentinela.camtv.ui.settings.SettingsScreen
@@ -46,16 +52,18 @@ fun SentinelaAppScreen() {
             HomeScreen(
                 onOpenMosaic = appViewModel::openMosaic,
                 onOpenCameras = appViewModel::openCameras,
+                onOpenCaptures = appViewModel::openCaptures,
                 onOpenSettings = appViewModel::openSettings,
             )
         }
         AppDestination.Mosaic -> MosaicScreen(
             viewModelFactory = viewModelFactory,
             onOpenHome = appViewModel::openHome,
-            onOpenSettings = appViewModel::openSettings,
             onExitApp = {
                 activity?.finishAndRemoveTask() ?: activity?.finish()
             },
+            captureRepository = application.container.captureRepository,
+            recordingProbeRepository = application.container.recordingProbeRepository,
         )
         AppDestination.Cameras -> {
             val cameraManagerViewModel: CameraManagerViewModel = viewModel(factory = viewModelFactory)
@@ -82,6 +90,44 @@ fun SentinelaAppScreen() {
                 onBack = appViewModel::goBack,
             )
         }
+        AppDestination.Captures -> {
+            val capturesViewModel: CapturesViewModel = viewModel(factory = viewModelFactory)
+            val capturesState by capturesViewModel.state.collectAsState()
+            val treeLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.OpenDocumentTree(),
+            ) { uri ->
+                if (uri == null) {
+                    capturesViewModel.showCustomPhotoLocationError()
+                    return@rememberLauncherForActivityResult
+                }
+                runCatching {
+                    context.contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                    )
+                }.onSuccess {
+                    capturesViewModel.setCustomPhotoLocation(uri)
+                }.onFailure {
+                    capturesViewModel.showCustomPhotoLocationError()
+                }
+            }
+
+            CapturesScreen(
+                state = capturesState,
+                onChoosePhotoLocation = {
+                    if (context.canOpenDocumentTree()) {
+                        treeLauncher.launch(null)
+                    } else {
+                        capturesViewModel.showPhotoLocationPickerUnavailable()
+                    }
+                },
+                onUseDefaultPhotoLocation = capturesViewModel::useDefaultPhotoLocation,
+                onMessageTimeout = capturesViewModel::clearMessage,
+                onOpenHome = appViewModel::openHome,
+                onBack = appViewModel::goBack,
+                customPhotoLocationEnabled = BuildConfig.DEBUG,
+            )
+        }
         AppDestination.Settings -> {
             val settingsViewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
             val settingsState by settingsViewModel.state.collectAsState()
@@ -105,6 +151,11 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
     is ContextWrapper -> baseContext.findActivity()
     else -> null
+}
+
+private fun Context.canOpenDocumentTree(): Boolean {
+    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+    return intent.resolveActivity(packageManager) != null
 }
 
 @Composable

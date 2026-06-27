@@ -29,4 +29,16 @@ class FullscreenQuickMenuKeyTest {
         assertEquals(MosaicNavigationDirection.Right, Key.DirectionRight.fullscreenNavigationDirection())
         assertNull(Key.DirectionCenter.fullscreenNavigationDirection())
     }
+
+    @Test
+    fun recordingLabelUsesManualRecordingState() {
+        assertEquals(
+            "Iniciar gravação",
+            fullscreenRecordingMenuLabel(recordingProbeActive = false),
+        )
+        assertEquals(
+            "Parar gravação",
+            fullscreenRecordingMenuLabel(recordingProbeActive = true),
+        )
+    }
 }

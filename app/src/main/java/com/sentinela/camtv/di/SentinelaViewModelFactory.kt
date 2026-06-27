@@ -2,7 +2,9 @@ package com.sentinela.camtv.di
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.sentinela.camtv.BuildConfig
 import com.sentinela.camtv.ui.app.AppViewModel
+import com.sentinela.camtv.ui.capturegallery.CapturesViewModel
 import com.sentinela.camtv.ui.cameras.CameraManagerViewModel
 import com.sentinela.camtv.ui.home.HomeViewModel
 import com.sentinela.camtv.ui.mosaic.MosaicViewModel
@@ -23,6 +25,10 @@ class SentinelaViewModelFactory(
         )
         FullscreenPlayerViewModel::class.java -> FullscreenPlayerViewModel(
             settingsRepository = container.settingsRepository,
+        )
+        CapturesViewModel::class.java -> CapturesViewModel(
+            settingsRepository = container.settingsRepository,
+            customPhotoLocationEnabled = BuildConfig.DEBUG,
         )
         CameraManagerViewModel::class.java -> CameraManagerViewModel(
             cameraRepository = container.cameraRepository,

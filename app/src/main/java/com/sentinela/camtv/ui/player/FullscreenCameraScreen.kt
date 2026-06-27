@@ -19,10 +19,12 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
+import androidx.media3.ui.PlayerView
 import com.sentinela.camtv.player.DvrRtspUrlBuilder
 import com.sentinela.camtv.ui.common.QuickMenu
 import com.sentinela.camtv.ui.common.QuickMenuAction
 import com.sentinela.camtv.ui.design.SentinelaOverlayCard
+import com.sentinela.camtv.ui.design.SentinelaTransientMessage
 import com.sentinela.camtv.ui.design.SentinelaTvColors
 import com.sentinela.camtv.ui.labels.audioLabel
 import com.sentinela.camtv.ui.labels.infoMenuLabel
@@ -42,8 +44,15 @@ fun FullscreenCameraScreen(
     onToggleStreamQuality: () -> Unit,
     onToggleInfo: () -> Unit,
     onToggleTransmissionMode: () -> Unit,
+    onTakePhoto: () -> Unit = {},
+    recordingProbeActive: Boolean = false,
+    onStartRecordingProbe: () -> Unit = {},
+    onStopRecordingProbe: () -> Unit = {},
+    transientMessage: String? = null,
+    onTransientMessageTimeout: () -> Unit = {},
+    onPlayerViewChanged: (PlayerView?) -> Unit = {},
+    onRenderedFirstFrameChanged: (Boolean) -> Unit = {},
     onOpenHome: () -> Unit,
-    onOpenSettings: () -> Unit,
     onNavigateDirection: (MosaicNavigationDirection) -> Unit = {},
     onExitApp: () -> Unit,
     onQuickMenuHintShown: () -> Unit,
@@ -109,6 +118,8 @@ fun FullscreenCameraScreen(
                 request = request,
                 rtspUrl = rtspUrl,
                 showPlayerInfo = state.showInfo,
+                onPlayerViewChanged = onPlayerViewChanged,
+                onRenderedFirstFrameChanged = onRenderedFirstFrameChanged,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -120,14 +131,25 @@ fun FullscreenCameraScreen(
                 onToggleStreamQuality = onToggleStreamQuality,
                 onToggleInfo = onToggleInfo,
                 onToggleTransmissionMode = onToggleTransmissionMode,
+                onTakePhoto = onTakePhoto,
+                recordingProbeActive = recordingProbeActive,
+                onStartRecordingProbe = onStartRecordingProbe,
+                onStopRecordingProbe = onStopRecordingProbe,
                 onOpenHome = onOpenHome,
-                onOpenSettings = onOpenSettings,
                 onExitApp = onExitApp,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
         } else if (state.showQuickMenuHint) {
             FullscreenQuickMenuHint(
                 modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
+
+        transientMessage?.let { message ->
+            SentinelaTransientMessage(
+                message = message,
+                onTimeout = onTransientMessageTimeout,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 28.dp),
             )
         }
     }
@@ -140,8 +162,11 @@ private fun FullscreenQuickMenu(
     onToggleStreamQuality: () -> Unit,
     onToggleInfo: () -> Unit,
     onToggleTransmissionMode: () -> Unit,
+    onTakePhoto: () -> Unit,
+    recordingProbeActive: Boolean,
+    onStartRecordingProbe: () -> Unit,
+    onStopRecordingProbe: () -> Unit,
     onOpenHome: () -> Unit,
-    onOpenSettings: () -> Unit,
     onExitApp: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -151,8 +176,12 @@ private fun FullscreenQuickMenu(
             QuickMenuAction(streamQualityLabel(state.streamQuality), onToggleStreamQuality),
             QuickMenuAction(infoMenuLabel(state.showInfo), onToggleInfo),
             QuickMenuAction(transmissionModeMenuLabel(state.transmissionMode), onToggleTransmissionMode),
+            QuickMenuAction("Tirar foto", onTakePhoto),
+            QuickMenuAction(
+                label = fullscreenRecordingMenuLabel(recordingProbeActive),
+                onClick = if (recordingProbeActive) onStopRecordingProbe else onStartRecordingProbe,
+            ),
             QuickMenuAction("Ir para início", onOpenHome),
-            QuickMenuAction("Ir para suporte", onOpenSettings),
             QuickMenuAction("Sair do app", onExitApp),
         ),
         modifier = modifier,
@@ -204,6 +233,13 @@ internal fun Key.fullscreenNavigationDirection(): MosaicNavigationDirection? = w
     Key.DirectionLeft -> MosaicNavigationDirection.Left
     Key.DirectionRight -> MosaicNavigationDirection.Right
     else -> null
+}
+
+internal fun fullscreenRecordingMenuLabel(
+    recordingProbeActive: Boolean,
+): String = when {
+    recordingProbeActive -> "Parar gravação"
+    else -> "Iniciar gravação"
 }
 
 private const val FULLSCREEN_QUICK_MENU_HINT_DURATION_MS = 4_000L

@@ -43,6 +43,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import kotlinx.coroutines.delay
 
 object SentinelaTvSpacing {
     val xSmall: Dp = 4.dp
@@ -53,7 +54,7 @@ object SentinelaTvSpacing {
     val screenHorizontal: Dp = 56.dp
     val screenVertical: Dp = 40.dp
     val mosaicOuter: Dp = 16.dp
-    val mosaicTileGap: Dp = 2.dp
+    val mosaicTileGap: Dp = 1.dp
 }
 
 object SentinelaTvSize {
@@ -158,6 +159,24 @@ fun SentinelaOverlayCard(
             fontWeight = FontWeight.SemiBold,
         )
     }
+}
+
+@Composable
+fun SentinelaTransientMessage(
+    message: String,
+    onTimeout: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LaunchedEffect(message) {
+        delay(3_500L)
+        onTimeout()
+    }
+
+    SentinelaOverlayCard(
+        text = message,
+        maxWidth = 640.dp,
+        modifier = modifier,
+    )
 }
 
 @Composable

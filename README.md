@@ -8,13 +8,25 @@ Ele foi criado para monitoramento local, com foco em privacidade, simplicidade e
 
 ## Principais recursos
 
-- Visualização em mosaico.
+- Mosaico adaptativo para câmeras RTSP/ONVIF.
+- Até 3 mosaicos organizáveis, com slots independentes.
 - Tela cheia para cada câmera.
+- Troca direcional de câmeras na tela cheia usando o mapa do mosaico.
 - Cadastro por RTSP direto.
 - Descoberta e cadastro por ONVIF.
+- Suporte a DVR/NVR com múltiplos canais quando expostos por ONVIF.
+- Alternância HD/SD e modos de menor latência/estabilidade.
+- Captura de foto da câmera em tela cheia.
 - Atualização manual pelo GitHub Releases.
 - Logs locais para suporte.
 - Interface pensada para controle remoto.
+
+## Compatibilidade atual
+
+- Suporta câmeras fixas via RTSP/ONVIF.
+- ONVIF é usado para descoberta, autenticação e obtenção dos streams.
+- No momento, o app não controla PTZ, zoom óptico, presets ou movimentação da câmera.
+- O foco atual é visualização local, não administração completa do dispositivo.
 
 ## Privacidade
 
@@ -27,6 +39,16 @@ As câmeras são acessadas localmente. O aplicativo não envia imagens, credenci
 Baixe a versão mais recente na página de releases:
 
 https://github.com/nyankocore/SentinelaCamTV/releases/latest
+
+Use o APK da ABI do seu aparelho quando souber qual é. Se não souber, use o APK `universal`.
+
+## Suporte
+
+Relatos de bugs podem ser enviados pelas Issues:
+
+https://github.com/nyankocore/SentinelaCamTV/issues
+
+Os logs são exportados manualmente pelo usuário dentro do app. Nenhum log é enviado automaticamente.
 
 ## Estado do projeto
 

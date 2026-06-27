@@ -1474,12 +1474,13 @@ private fun CameraListItem(
     height: Dp,
     metrics: CameraManagerMetrics,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
 ) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(metrics.dp(9f))
 
     Button(
-        onClick = {},
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
             .height(height)
@@ -1722,8 +1723,15 @@ private fun CameraManagerUiState.cameraInSlot(
 
 private fun CameraManagerUiState.unassignedCameras(): List<Camera> {
     val assignedIds = mosaicSlots.mapTo(mutableSetOf()) { slot -> slot.cameraId }
-    return connectedCamerasForDisplay(cameras).filterNot { camera -> camera.id in assignedIds }
+    return connectedCamerasForDisplay(cameras)
+        .sortedBy { camera -> camera.position }
+        .filterNot { camera -> camera.id in assignedIds }
 }
+
+internal fun connectedCamerasForDisplay(cameras: List<Camera>): List<Camera> =
+    cameras
+        .filter { camera -> camera.enabled }
+        .sortedBy { camera -> camera.position }
 
 internal fun isMosaicSlotSelected(
     cameraId: String?,
@@ -1744,7 +1752,7 @@ internal fun mosaicSummaryText(state: CameraManagerUiState): String =
         if (unassignedCount != 1) append('s')
     }
 
-private fun cameraDialogTitle(message: String): String =
+internal fun cameraDialogTitle(message: String): String =
     when {
         message.contains("conectada", ignoreCase = true) -> "Câmera(s) conectada(s)"
         message.contains("ONVIF", ignoreCase = true) -> "Falha ONVIF"

@@ -174,12 +174,18 @@ fun RtspCameraTile(
                     else -> false
                 }
             }
-            .border(
-                width = if (showFocusedBorder || selectedForReorder) 4.dp else 1.dp,
-                color = when {
-                    selectedForReorder -> SentinelaTvColors.cameraTileEditSelectedBorder
-                    showFocusedBorder -> SentinelaTvColors.cameraTileFocusedBorder
-                    else -> SentinelaTvColors.cameraTileBorder
+            .then(
+                if (showFocusedBorder || selectedForReorder) {
+                    Modifier.border(
+                        width = 4.dp,
+                        color = if (selectedForReorder) {
+                            SentinelaTvColors.cameraTileEditSelectedBorder
+                        } else {
+                            SentinelaTvColors.cameraTileFocusedBorder
+                        },
+                    )
+                } else {
+                    Modifier
                 },
             )
             .onFocusChanged { focusState ->

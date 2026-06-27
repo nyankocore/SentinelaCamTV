@@ -13,6 +13,7 @@ class SupportExportMessageTest {
         assertTrue(message.contains("Arquivo gerado:"))
         assertTrue(message.contains("1. Envie esse arquivo para um serviço de nuvem."))
         assertTrue(message.contains("2. Copie o link de compartilhamento do arquivo."))
+        assertTrue(message.contains("3. Acesse:"))
         assertTrue(message.contains("4. Crie um relato do problema e cole o link no texto."))
         assertTrue(message.contains(ProjectLinks.ISSUES_URL))
     }

@@ -4,6 +4,10 @@ import android.content.Context
 import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.sentinela.camtv.BuildConfig
+import com.sentinela.camtv.capture.CaptureRepository
+import com.sentinela.camtv.capture.CaptureStorage
+import com.sentinela.camtv.capture.FrameCaptureEngine
 import com.sentinela.camtv.data.camera.CameraRepository
 import com.sentinela.camtv.data.camera.RoomCameraRepository
 import com.sentinela.camtv.data.db.SentinelaDatabase
@@ -24,6 +28,8 @@ import com.sentinela.camtv.player.Media3RtspConnectionTester
 import com.sentinela.camtv.player.RtspConnectionTester
 import com.sentinela.camtv.preferences.SettingsRepository
 import com.sentinela.camtv.preferences.playerPreferencesRepository
+import com.sentinela.camtv.recording.RecordingProbeRepository
+import com.sentinela.camtv.recording.RecordingProbeStorage
 import com.sentinela.camtv.ui.cameras.RtspCameraDraftRepository
 import com.sentinela.camtv.ui.cameras.rtspCameraDraftRepository
 import com.sentinela.onvif.OnvifSoapClient
@@ -62,6 +68,17 @@ class AppContainer(
     )
 
     val settingsRepository: SettingsRepository = playerPreferencesRepository(appContext)
+
+    val captureRepository: CaptureRepository = CaptureRepository(
+        settingsRepository = settingsRepository,
+        frameCaptureEngine = FrameCaptureEngine(),
+        captureStorage = CaptureStorage(appContext),
+        customPhotoLocationEnabled = BuildConfig.DEBUG,
+    )
+
+    val recordingProbeRepository: RecordingProbeRepository = RecordingProbeRepository(
+        storage = RecordingProbeStorage(appContext),
+    )
 
     val rtspCameraDraftRepository: RtspCameraDraftRepository =
         rtspCameraDraftRepository(appContext)

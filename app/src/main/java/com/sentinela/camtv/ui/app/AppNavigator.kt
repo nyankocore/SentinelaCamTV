@@ -34,6 +34,10 @@ class AppNavigator(
         openReturnableDestination(AppDestination.Cameras)
     }
 
+    fun openCaptures() {
+        openReturnableDestination(AppDestination.Captures)
+    }
+
     fun openSettings() {
         openReturnableDestination(AppDestination.Settings)
     }
@@ -49,6 +53,7 @@ class AppNavigator(
             AppDestination.Home -> state.destination
 
             AppDestination.Cameras,
+            AppDestination.Captures,
             AppDestination.Settings,
             AppDestination.Loading -> AppDestination.Home
         }

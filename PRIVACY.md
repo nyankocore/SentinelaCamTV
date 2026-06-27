@@ -33,3 +33,9 @@ O botão `Buscar atualização` consulta o GitHub Releases apenas quando acionad
 O app pode gerar logs locais para suporte e relatórios locais de crashes. Esses arquivos ficam no aparelho até o usuário decidir exportá-los.
 
 Logs não devem incluir senhas, tokens ou URLs RTSP com credenciais.
+
+## Capturas
+
+Fotos capturadas na tela cheia são salvas localmente no aparelho ou na pasta escolhida pelo usuário, quando o Android TV oferecer seletor de pasta.
+
+O app não envia fotos, vídeos ou imagens das câmeras para servidores do projeto.

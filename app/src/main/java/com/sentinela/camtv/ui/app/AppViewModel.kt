@@ -13,6 +13,7 @@ enum class AppDestination {
     Home,
     Mosaic,
     Cameras,
+    Captures,
     Settings,
 }
 
@@ -54,6 +55,11 @@ class AppViewModel(
 
     fun openCameras() {
         navigator.openCameras()
+        publishNavigationState()
+    }
+
+    fun openCaptures() {
+        navigator.openCaptures()
         publishNavigationState()
     }
 

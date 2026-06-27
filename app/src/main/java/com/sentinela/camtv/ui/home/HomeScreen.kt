@@ -56,6 +56,7 @@ import com.sentinela.camtv.ui.design.SentinelaTvColors
 fun HomeScreen(
     onOpenMosaic: () -> Unit,
     onOpenCameras: () -> Unit,
+    onOpenCaptures: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -120,6 +121,12 @@ fun HomeScreen(
                     label = "Cadastrar câmeras",
                     scale = scale,
                     onClick = onOpenCameras,
+                )
+                Spacer(Modifier.height(16f.sdp(scale)))
+                HomeActionButton(
+                    label = "Capturas",
+                    scale = scale,
+                    onClick = onOpenCaptures,
                 )
                 Spacer(Modifier.height(16f.sdp(scale)))
                 HomeActionButton(

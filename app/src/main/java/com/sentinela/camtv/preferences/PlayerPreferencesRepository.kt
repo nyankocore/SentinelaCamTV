@@ -34,6 +34,7 @@ class PlayerPreferencesRepository(
                 ?.let { value -> runCatching { TransmissionMode.valueOf(value) }.getOrNull() }
                 ?: TransmissionMode.MENOR_LATENCIA,
             activeMosaicIndex = (preferences[ACTIVE_MOSAIC_INDEX] ?: 0).coerceIn(0, MOSAIC_COUNT - 1),
+            photoCaptureTreeUri = preferences[PHOTO_CAPTURE_TREE_URI],
         )
     }
 
@@ -83,6 +84,16 @@ class PlayerPreferencesRepository(
         }
     }
 
+    override suspend fun setPhotoCaptureTreeUri(uri: String?) {
+        dataStore.edit { preferences ->
+            if (uri == null) {
+                preferences.remove(PHOTO_CAPTURE_TREE_URI)
+            } else {
+                preferences[PHOTO_CAPTURE_TREE_URI] = uri
+            }
+        }
+    }
+
     private companion object {
         val SHOW_PLAYER_INFO = booleanPreferencesKey("show_player_info")
         val SHOW_MOSAIC_INFO = booleanPreferencesKey("show_mosaic_info")
@@ -91,6 +102,7 @@ class PlayerPreferencesRepository(
         val MOSAIC_STREAM_QUALITY = stringPreferencesKey("mosaic_stream_quality")
         val GLOBAL_TRANSMISSION_MODE = stringPreferencesKey("global_transmission_mode")
         val ACTIVE_MOSAIC_INDEX = intPreferencesKey("active_mosaic_index")
+        val PHOTO_CAPTURE_TREE_URI = stringPreferencesKey("photo_capture_tree_uri")
     }
 }
 

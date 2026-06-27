@@ -25,21 +25,33 @@ data class PlayerBufferPreset(
     val maxBufferMs: Int,
     val bufferForPlaybackMs: Int,
     val bufferAfterRebufferMs: Int,
-)
+) {
+    init {
+        require(maxBufferMs >= minBufferMs) {
+            "maxBufferMs must be greater than or equal to minBufferMs"
+        }
+        require(minBufferMs >= bufferForPlaybackMs) {
+            "minBufferMs must be greater than or equal to bufferForPlaybackMs"
+        }
+        require(minBufferMs >= bufferAfterRebufferMs) {
+            "minBufferMs must be greater than or equal to bufferAfterRebufferMs"
+        }
+    }
+}
 
 object PlayerBufferPresets {
     val LowLatency = PlayerBufferPreset(
         minBufferMs = 100,
-        maxBufferMs = 200,
-        bufferForPlaybackMs = 100,
+        maxBufferMs = 150,
+        bufferForPlaybackMs = 50,
         bufferAfterRebufferMs = 100,
     )
 
     val Quality = PlayerBufferPreset(
-        minBufferMs = 1_000,
-        maxBufferMs = 5_000,
-        bufferForPlaybackMs = 500,
-        bufferAfterRebufferMs = 1_000,
+        minBufferMs = 500,
+        maxBufferMs = 1_500,
+        bufferForPlaybackMs = 250,
+        bufferAfterRebufferMs = 500,
     )
 }
 
@@ -80,8 +92,8 @@ fun TransmissionMode.bufferPreset(): PlayerBufferPreset = when (this) {
 }
 
 fun TransmissionMode.rtspTimeoutMs(): Long = when (this) {
-    TransmissionMode.MENOR_LATENCIA -> 1_500L
-    TransmissionMode.QUALIDADE -> 5_000L
+    TransmissionMode.MENOR_LATENCIA -> 3_000L
+    TransmissionMode.QUALIDADE -> 3_000L
 }
 
 fun TransmissionMode.next(): TransmissionMode = when (this) {

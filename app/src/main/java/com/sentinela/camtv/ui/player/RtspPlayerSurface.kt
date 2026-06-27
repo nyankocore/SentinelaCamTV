@@ -71,6 +71,8 @@ fun RtspPlayerSurface(
     onSoftwareDecoderInMosaicHd: (cameraId: String, decoderName: String) -> Unit = { _, _ -> },
     onDecoderFailureInMosaicHd: (cameraId: String, reason: String) -> Unit = { _, _ -> },
     onVideoAspectRatioChanged: (cameraId: String, subtype: Int, width: Int, height: Int) -> Unit = { _, _, _, _ -> },
+    onPlayerViewChanged: (PlayerView?) -> Unit = {},
+    onRenderedFirstFrameChanged: (Boolean) -> Unit = {},
 ) {
     var connectionState by remember(rtspUrl, request.subtype, request.audioMode, request.transmissionMode) {
         mutableStateOf<PlayerConnectionState>(PlayerConnectionState.Connecting)
@@ -108,6 +110,10 @@ fun RtspPlayerSurface(
     }
     val initialTransportMode = remember(rtspUrl, request.subtype, request.transmissionMode) {
         request.transmissionMode.defaultTransportMode()
+    }
+
+    LaunchedEffect(rtspUrl, request.camera.id, request.subtype, reconnectGeneration) {
+        onRenderedFirstFrameChanged(false)
     }
 
     val context = LocalContext.current
@@ -358,6 +364,7 @@ fun RtspPlayerSurface(
                 override fun onRenderedFirstFrame() {
                     if (!renderedFirstFrame) {
                         renderedFirstFrame = true
+                        onRenderedFirstFrameChanged(true)
                         firstFrameMs = SystemClock.elapsedRealtime() - playerStartedAtMs
                         clearRecoveredDiagnostics()
                         logRtspInfo(
@@ -518,6 +525,7 @@ fun RtspPlayerSurface(
     ) {
         PlayerAndroidView(
             player = player,
+            onPlayerViewChanged = onPlayerViewChanged,
             modifier = Modifier.fillMaxSize(),
         )
 
@@ -525,6 +533,13 @@ fun RtspPlayerSurface(
             PlayerInfoOverlay(
                 diagnostics = diagnostics,
             )
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            onPlayerViewChanged(null)
+            onRenderedFirstFrameChanged(false)
         }
     }
 }
@@ -647,6 +662,7 @@ private fun trackTypeLabel(trackType: Int): String = when (trackType) {
 @Composable
 private fun PlayerAndroidView(
     player: ExoPlayer?,
+    onPlayerViewChanged: (PlayerView?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AndroidView(
@@ -661,10 +677,12 @@ private fun PlayerAndroidView(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT,
                 )
+                onPlayerViewChanged(this)
             }
         },
         update = { playerView ->
             playerView.player = player
+            onPlayerViewChanged(playerView)
         },
     )
 }

@@ -7,6 +7,6 @@ import org.junit.Test
 class MosaicDesignTokenTest {
     @Test
     fun mosaicTileGapIsCompact() {
-        assertEquals(2.dp, SentinelaTvSpacing.mosaicTileGap)
+        assertEquals(1.dp, SentinelaTvSpacing.mosaicTileGap)
     }
 }

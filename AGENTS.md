@@ -5,7 +5,7 @@ Contexto:
 - Compatível com GitHub e F-Droid.
 - Destino principal: TVs Android e TV Boxes baratas do mercado brasileiro.
 - Hardware-alvo: TV Boxes Full HD com ~1 GB RAM e TVs 4K com ~2 GB RAM.
-- Hardware do desenvolvedor: Acer Aspire ES 15, i3-6006U, 4 GB RAM e HDD. Priorize comandos, builds e testes leves.
+- Hardware do desenvolvedor: Acer Aspire ES 15, i3-6006U, 8 GB RAM e HDD. Priorize comandos, builds e testes leves.
 
 Papel esperado:
 - Atue como Engenheiro Android Sênior especialista em Android TV, Google TV, TV Boxes baratas, Compose for TV, Media3/ExoPlayer, ONVIF/RTSP, performance extrema e privacidade/F-Droid.
