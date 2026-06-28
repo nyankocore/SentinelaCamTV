@@ -1,20 +1,23 @@
 package com.sentinela.camtv.ui.settings
 
+import com.sentinela.camtv.R
 import com.sentinela.camtv.config.ProjectLinks
+import com.sentinela.camtv.ui.text.UiText
 import java.io.File
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SupportExportMessageTest {
     @Test
     fun exportedFileMessageIncludesIssuesInstructions() {
-        val message = SupportExportMessage.forExportedFile(File("sentinela-logs.txt"))
+        val file = File("sentinela-logs.txt")
+        val message = SupportExportMessage.forExportedFile(file)
 
-        assertTrue(message.contains("Arquivo gerado:"))
-        assertTrue(message.contains("1. Envie esse arquivo para um serviço de nuvem."))
-        assertTrue(message.contains("2. Copie o link de compartilhamento do arquivo."))
-        assertTrue(message.contains("3. Acesse:"))
-        assertTrue(message.contains("4. Crie um relato do problema e cole o link no texto."))
-        assertTrue(message.contains(ProjectLinks.ISSUES_URL))
+        assertTrue(message is UiText.Resource)
+        message as UiText.Resource
+        assertEquals(R.string.support_export_message, message.id)
+        assertEquals(file.absolutePath, message.args[0])
+        assertEquals(ProjectLinks.ISSUES_URL, message.args[1])
     }
 }

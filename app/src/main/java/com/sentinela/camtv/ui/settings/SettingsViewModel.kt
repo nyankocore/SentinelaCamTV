@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sentinela.camtv.BuildConfig
+import com.sentinela.camtv.R
 import com.sentinela.camtv.config.ProjectLinks
 import com.sentinela.camtv.data.update.AppUpdateInstallResult
 import com.sentinela.camtv.data.update.AppUpdateInstaller
@@ -11,7 +12,10 @@ import com.sentinela.camtv.data.update.AvailableUpdate
 import com.sentinela.camtv.data.update.DownloadedUpdate
 import com.sentinela.camtv.data.update.UpdateCheckResult
 import com.sentinela.camtv.data.update.UpdateRepository
+import com.sentinela.camtv.localization.AppLanguage
 import com.sentinela.camtv.logging.LogRepository
+import com.sentinela.camtv.preferences.SettingsRepository
+import com.sentinela.camtv.ui.text.UiText
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -21,8 +25,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class SettingsUiState(
-    val exportMessage: String? = null,
-    val updateMessage: String? = null,
+    val exportMessage: UiText? = null,
+    val updateMessage: UiText? = null,
     val showUpdateDialog: Boolean = false,
     val checkingForUpdate: Boolean = false,
     val downloadingUpdate: Boolean = false,
@@ -31,20 +35,23 @@ data class SettingsUiState(
     val versionName: String = BuildConfig.VERSION_NAME,
     val license: String = "GPL-3.0-or-later",
     val siteUrl: String = ProjectLinks.SITE_URL,
+    val appLanguage: AppLanguage = AppLanguage.System,
 )
 
 class SettingsViewModel(
     private val logRepository: LogRepository,
     private val updateRepository: UpdateRepository,
     private val appUpdateInstaller: AppUpdateInstaller,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
-    private val exportMessage = MutableStateFlow<String?>(null)
+    private val exportMessage = MutableStateFlow<UiText?>(null)
     private val updateState = MutableStateFlow(UpdateUiState())
 
     val state: StateFlow<SettingsUiState> = combine(
         exportMessage,
         updateState,
-    ) { export, update ->
+        settingsRepository.observePreferences(),
+    ) { export, update, preferences ->
         SettingsUiState(
             exportMessage = export,
             updateMessage = update.message,
@@ -53,6 +60,7 @@ class SettingsViewModel(
             downloadingUpdate = update.downloading,
             availableUpdate = update.availableUpdate,
             downloadedUpdate = update.downloadedUpdate,
+            appLanguage = AppLanguage.fromTag(preferences.appLanguageTag),
         )
     }.stateIn(
         scope = viewModelScope,
@@ -79,7 +87,7 @@ class SettingsViewModel(
             updateState.value = UpdateUiState(
                 checking = true,
                 showDialog = true,
-                message = "Buscando atualização...",
+                message = UiText.Resource(R.string.update_checking),
             )
             val result = updateRepository.checkForUpdate(
                 currentVersionName = BuildConfig.VERSION_NAME,
@@ -87,7 +95,10 @@ class SettingsViewModel(
             ).getOrElse { error ->
                 updateState.value = UpdateUiState(
                     showDialog = true,
-                    message = "Falha ao buscar atualização: ${error.message ?: "erro desconhecido"}",
+                    message = UiText.Resource(
+                        R.string.update_check_failed,
+                        listOf(error.message ?: "erro desconhecido"),
+                    ),
                 )
                 return@launch
             }
@@ -96,7 +107,7 @@ class SettingsViewModel(
                 is UpdateCheckResult.Available -> updateStateForAvailableUpdate(result.update)
                 UpdateCheckResult.UpToDate -> UpdateUiState(
                     showDialog = true,
-                    message = "Você já está na versão mais recente.",
+                    message = UiText.Resource(R.string.update_up_to_date),
                 )
             }
         }
@@ -110,13 +121,13 @@ class SettingsViewModel(
             updateState.value = updateState.value.copy(
                 downloading = true,
                 showDialog = true,
-                message = "Baixando atualização...",
+                message = UiText.Resource(R.string.update_downloading),
             )
             updateRepository.downloadUpdate(update).fold(
                 onSuccess = { downloaded ->
                     updateState.value = UpdateUiState(
                         showDialog = true,
-                        message = "Atualização baixada. Abrindo instalador...",
+                        message = UiText.Resource(R.string.update_downloaded_opening_installer),
                         availableUpdate = update,
                         downloadedUpdate = downloaded,
                     )
@@ -126,7 +137,10 @@ class SettingsViewModel(
                     updateState.value = updateState.value.copy(
                         downloading = false,
                         showDialog = true,
-                        message = "Falha ao baixar atualização: ${error.message ?: "erro desconhecido"}",
+                        message = UiText.Resource(
+                            R.string.update_download_failed,
+                            listOf(error.message ?: "erro desconhecido"),
+                        ),
                     )
                 },
             )
@@ -152,7 +166,7 @@ class SettingsViewModel(
 
         updateState.value = current.copy(
             showDialog = true,
-            message = "Permissão concedida. Abrindo instalador...",
+            message = UiText.Resource(R.string.update_permission_granted),
         )
         openInstaller(downloaded)
     }
@@ -161,19 +175,25 @@ class SettingsViewModel(
         updateState.value = updateState.value.copy(showDialog = false)
     }
 
+    fun selectAppLanguage(language: AppLanguage) {
+        viewModelScope.launch {
+            settingsRepository.setAppLanguageTag(language.storageTag)
+        }
+    }
+
     private suspend fun updateStateForAvailableUpdate(update: AvailableUpdate): UpdateUiState {
         val downloaded = updateRepository.findDownloadedUpdate(update).getOrNull()
         return if (downloaded != null) {
             UpdateUiState(
                 showDialog = true,
-                message = "Atualização já baixada.",
+                message = UiText.Resource(R.string.update_already_downloaded),
                 availableUpdate = update,
                 downloadedUpdate = downloaded,
             )
         } else {
             UpdateUiState(
                 showDialog = true,
-                message = "Versão ${update.versionName} disponível.",
+                message = UiText.Resource(R.string.update_version_available, listOf(update.versionName)),
                 availableUpdate = update,
             )
         }
@@ -181,11 +201,16 @@ class SettingsViewModel(
 
     private fun exportFile(block: suspend () -> Result<File>) {
         viewModelScope.launch {
-            exportMessage.value = "Exportando..."
+            exportMessage.value = UiText.Resource(R.string.support_exporting)
             exportMessage.value = block()
                 .fold(
                     onSuccess = SupportExportMessage::forExportedFile,
-                    onFailure = { error -> "Falha ao exportar: ${error.message ?: "erro desconhecido"}" },
+                    onFailure = { error ->
+                        UiText.Resource(
+                            R.string.support_export_failed,
+                            listOf(error.message ?: "erro desconhecido"),
+                        )
+                    },
                 )
         }
     }
@@ -200,7 +225,7 @@ class SettingsViewModel(
 }
 
 internal data class UpdateUiState(
-    val message: String? = null,
+    val message: UiText? = null,
     val showDialog: Boolean = false,
     val checking: Boolean = false,
     val downloading: Boolean = false,
@@ -219,7 +244,7 @@ internal object UpdateUiStateReducer {
             AppUpdateInstallResult.InstallerOpened -> current.copy(
                 downloading = false,
                 showDialog = true,
-                message = "Instalador aberto. Confirme a atualização no Android.",
+                message = UiText.Resource(R.string.update_installer_opened),
                 downloadedUpdate = downloaded,
                 waitingForInstallPermission = false,
             )
@@ -227,7 +252,7 @@ internal object UpdateUiStateReducer {
             AppUpdateInstallResult.PermissionRequired -> current.copy(
                 downloading = false,
                 showDialog = true,
-                message = "Permissão necessária. Ative a instalação por este app e volte para continuar.",
+                message = UiText.Resource(R.string.update_permission_required),
                 downloadedUpdate = downloaded,
                 waitingForInstallPermission = true,
             )
@@ -235,7 +260,7 @@ internal object UpdateUiStateReducer {
             is AppUpdateInstallResult.Failed -> current.copy(
                 downloading = false,
                 showDialog = true,
-                message = result.message,
+                message = UiText.Raw(result.message),
                 downloadedUpdate = downloaded,
                 waitingForInstallPermission = false,
             )

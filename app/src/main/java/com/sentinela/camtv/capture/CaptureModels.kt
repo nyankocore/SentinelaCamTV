@@ -1,6 +1,8 @@
 package com.sentinela.camtv.capture
 
 import android.net.Uri
+import com.sentinela.camtv.R
+import com.sentinela.camtv.ui.text.UiText
 
 data class CaptureRequest(
     val cameraName: String,
@@ -29,21 +31,21 @@ enum class CaptureError {
     WriteFailed,
 }
 
-fun CaptureResult.userMessage(): String = when (this) {
-    is CaptureResult.Success -> "Foto salva."
+fun CaptureResult.userMessage(): UiText = when (this) {
+    is CaptureResult.Success -> UiText.Resource(R.string.capture_photo_saved)
     is CaptureResult.Failure -> error.userMessage()
 }
 
-fun CaptureError.userMessage(): String = when (this) {
-    CaptureError.UnsupportedAndroid -> "Captura de foto indisponível neste Android."
-    CaptureError.FirstFrameMissing -> "Aguarde a imagem da câmera aparecer para tirar foto."
+fun CaptureError.userMessage(): UiText = when (this) {
+    CaptureError.UnsupportedAndroid -> UiText.Resource(R.string.capture_unsupported_android)
+    CaptureError.FirstFrameMissing -> UiText.Resource(R.string.capture_first_frame_missing)
     CaptureError.NoCaptureSource,
     CaptureError.CaptureFailed,
-    -> "Não foi possível capturar a imagem da câmera agora."
-    CaptureError.SourceNoData -> "Não foi possível capturar a imagem da câmera agora."
+    -> UiText.Resource(R.string.capture_failed_now)
+    CaptureError.SourceNoData -> UiText.Resource(R.string.capture_failed_now)
     CaptureError.CustomLocationUnavailable ->
-        "Não foi possível salvar nesse local. Escolha outra pasta ou use o local padrão."
-    CaptureError.WriteFailed -> "Não foi possível salvar a foto."
+        UiText.Resource(R.string.capture_custom_location_unavailable)
+    CaptureError.WriteFailed -> UiText.Resource(R.string.capture_write_failed)
 }
 
 data class PhotoCaptureDestination(

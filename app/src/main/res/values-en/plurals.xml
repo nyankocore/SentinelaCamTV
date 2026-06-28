@@ -1,0 +1,18 @@
+<resources>
+    <plurals name="camera_count">
+        <item quantity="one">%1$d camera</item>
+        <item quantity="other">%1$d cameras</item>
+    </plurals>
+    <plurals name="camera_count_connected">
+        <item quantity="one">%1$d camera connected.</item>
+        <item quantity="other">%1$d cameras connected.</item>
+    </plurals>
+    <plurals name="mosaic_summary_camera_count">
+        <item quantity="one">Mosaic %1$d: %2$d camera</item>
+        <item quantity="other">Mosaic %1$d: %2$d cameras</item>
+    </plurals>
+    <plurals name="outside_mosaic_camera_count">
+        <item quantity="one">Outside mosaic: %1$d camera</item>
+        <item quantity="other">Outside mosaic: %1$d cameras</item>
+    </plurals>
+</resources>

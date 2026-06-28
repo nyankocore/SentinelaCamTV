@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,6 +36,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -46,13 +46,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.sentinela.camtv.R
+import com.sentinela.camtv.localization.AppLanguage
 import com.sentinela.camtv.ui.common.AppInfoFooter
 import com.sentinela.camtv.ui.design.SentinelaTvColors
+import com.sentinela.camtv.ui.text.asString
 import kotlinx.coroutines.launch
 
 @Composable
@@ -60,32 +60,13 @@ fun SettingsScreen(
     state: SettingsUiState,
     onExportSupportLogs: () -> Unit,
     onExportCrashReport: () -> Unit,
-    onCheckForUpdate: () -> Unit,
-    onDownloadUpdate: () -> Unit,
-    onInstallDownloadedUpdate: () -> Unit,
-    onResumeAfterUpdatePermission: () -> Unit,
-    onDismissUpdateDialog: () -> Unit,
-    onOpenHome: () -> Unit,
     onBack: () -> Unit,
 ) {
     val focusRequester = remember { FocusRequester() }
-    val lifecycleOwner = LocalLifecycleOwner.current
     BackHandler(onBack = onBack)
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
-    }
-
-    DisposableEffect(lifecycleOwner, onResumeAfterUpdatePermission) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                onResumeAfterUpdatePermission()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
     }
 
     BoxWithConstraints(
@@ -115,35 +96,22 @@ fun SettingsScreen(
                 modifier = Modifier.offset(x = 78f.sdp(scale), y = 190f.sdp(scale)),
             ) {
                 SupportActionButton(
-                    label = "Exportar logs para suporte",
+                    label = stringResource(R.string.support_export_logs),
                     scale = scale,
                     onClick = onExportSupportLogs,
                     modifier = Modifier.focusRequester(focusRequester),
                 )
                 Spacer(Modifier.height(16f.sdp(scale)))
                 SupportActionButton(
-                    label = "Exportar logs de crashes",
+                    label = stringResource(R.string.support_export_crashes),
                     scale = scale,
                     onClick = onExportCrashReport,
-                )
-                Spacer(Modifier.height(16f.sdp(scale)))
-                SupportActionButton(
-                    label = "Buscar atualização",
-                    scale = scale,
-                    onClick = onCheckForUpdate,
-                    enabled = !state.checkingForUpdate && !state.downloadingUpdate,
-                )
-                Spacer(Modifier.height(16f.sdp(scale)))
-                SupportActionButton(
-                    label = "Ir para início",
-                    scale = scale,
-                    onClick = onOpenHome,
                 )
             }
 
             state.exportMessage?.let { message ->
                 SupportMessageCard(
-                    text = message,
+                    text = message.asString(),
                     scale = scale,
                     modifier = Modifier
                         .offset(x = 585f.sdp(scale), y = 190f.sdp(scale))
@@ -160,20 +128,90 @@ fun SettingsScreen(
             )
         }
 
-        if (state.showUpdateDialog) {
-            UpdateStatusDialog(
-                state = state,
+    }
+}
+
+@Composable
+internal fun LanguageDialog(
+    selectedLanguage: AppLanguage,
+    scale: Float,
+    onSelectLanguage: (AppLanguage) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val firstFocusRequester = remember { FocusRequester() }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        LaunchedEffect(Unit) {
+            firstFocusRequester.requestFocus()
+        }
+
+        Column(
+            modifier = Modifier
+                .width(620f.sdp(scale))
+                .background(
+                    color = SentinelaTvColors.panel,
+                    shape = RoundedCornerShape(20f.sdp(scale)),
+                )
+                .border(
+                    width = 2f.sdp(scale),
+                    color = SentinelaTvColors.controlFocused,
+                    shape = RoundedCornerShape(20f.sdp(scale)),
+                )
+                .padding(32f.sdp(scale)),
+        ) {
+            Text(
+                text = stringResource(R.string.language_dialog_title),
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 26f.ssp(scale),
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(8f.sdp(scale)))
+            Text(
+                text = stringResource(R.string.language_dialog_message),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 17f.ssp(scale),
+                lineHeight = 23f.ssp(scale),
+            )
+            Spacer(Modifier.height(22f.sdp(scale)))
+
+            AppLanguage.selectable.forEachIndexed { index, language ->
+                LanguageOptionButton(
+                    label = if (language == selectedLanguage) {
+                        stringResource(
+                            R.string.language_selected_label,
+                            stringResource(language.labelRes),
+                        )
+                    } else {
+                        stringResource(language.labelRes)
+                    },
+                    scale = scale,
+                    onClick = { onSelectLanguage(language) },
+                    modifier = if (index == 0) {
+                        Modifier.focusRequester(firstFocusRequester)
+                    } else {
+                        Modifier
+                    },
+                )
+                if (index < AppLanguage.selectable.lastIndex) {
+                    Spacer(Modifier.height(10f.sdp(scale)))
+                }
+            }
+
+            Spacer(Modifier.height(18f.sdp(scale)))
+            DialogActionButton(
+                label = stringResource(R.string.common_cancel),
                 scale = scale,
-                onDownloadUpdate = onDownloadUpdate,
-                onInstallDownloadedUpdate = onInstallDownloadedUpdate,
-                onDismiss = onDismissUpdateDialog,
+                onClick = onDismiss,
             )
         }
     }
 }
 
 @Composable
-private fun UpdateStatusDialog(
+internal fun UpdateStatusDialog(
     state: SettingsUiState,
     scale: Float,
     onDownloadUpdate: () -> Unit,
@@ -185,17 +223,17 @@ private fun UpdateStatusDialog(
     val coroutineScope = rememberCoroutineScope()
     var changelogFocused by remember { mutableStateOf(false) }
     val title = when {
-        state.checkingForUpdate -> "Buscando atualização..."
-        state.downloadingUpdate -> "Baixando atualização..."
-        state.downloadedUpdate != null -> "Atualização baixada"
-        state.availableUpdate != null -> "Versão ${state.availableUpdate.versionName} disponível"
-        else -> "Atualização"
+        state.checkingForUpdate -> stringResource(R.string.update_checking)
+        state.downloadingUpdate -> stringResource(R.string.update_downloading)
+        state.downloadedUpdate != null -> stringResource(R.string.update_dialog_downloaded_title)
+        state.availableUpdate != null -> stringResource(R.string.update_version_available, state.availableUpdate.versionName)
+        else -> stringResource(R.string.update_dialog_default_title)
     }
     val message = when {
         state.availableUpdate != null && !state.downloadingUpdate && state.downloadedUpdate == null -> {
-            state.availableUpdate.changelog.ifBlank { "Sem changelog informado." }
+            state.availableUpdate.changelog.ifBlank { stringResource(R.string.update_dialog_no_changelog) }
         }
-        else -> state.updateMessage.orEmpty()
+        else -> state.updateMessage?.asString().orEmpty()
     }
 
     Dialog(
@@ -233,9 +271,9 @@ private fun UpdateStatusDialog(
                     state.downloadedUpdate == null &&
                     !state.downloadingUpdate
                 ) {
-                    "Changelog"
+                    stringResource(R.string.update_dialog_changelog)
                 } else {
-                    "Status"
+                    stringResource(R.string.update_dialog_status)
                 },
                 modifier = Modifier.offset(x = 44f.sdp(scale), y = 94f.sdp(scale)),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -307,7 +345,7 @@ private fun UpdateStatusDialog(
                         state.downloadedUpdate == null &&
                         !state.downloadingUpdate -> {
                         DialogActionButton(
-                            label = "Baixar",
+                            label = stringResource(R.string.common_download),
                             scale = scale,
                             enabled = !state.checkingForUpdate,
                             onClick = onDownloadUpdate,
@@ -315,14 +353,14 @@ private fun UpdateStatusDialog(
                         )
                         Spacer(Modifier.width(24f.sdp(scale)))
                         DialogActionButton(
-                            label = "Fechar",
+                            label = stringResource(R.string.common_close),
                             scale = scale,
                             onClick = onDismiss,
                         )
                     }
                     state.downloadedUpdate != null -> {
                         DialogActionButton(
-                            label = "Instalar",
+                            label = stringResource(R.string.common_install),
                             scale = scale,
                             enabled = !state.downloadingUpdate && !state.checkingForUpdate,
                             onClick = onInstallDownloadedUpdate,
@@ -330,14 +368,14 @@ private fun UpdateStatusDialog(
                         )
                         Spacer(Modifier.width(24f.sdp(scale)))
                         DialogActionButton(
-                            label = "Fechar",
+                            label = stringResource(R.string.common_close),
                             scale = scale,
                             onClick = onDismiss,
                         )
                     }
                     else -> {
                         DialogActionButton(
-                            label = "Fechar",
+                            label = stringResource(R.string.common_close),
                             scale = scale,
                             onClick = onDismiss,
                             modifier = Modifier.focusRequester(primaryFocusRequester),
@@ -410,6 +448,24 @@ private fun DialogActionButton(
         width = 220f.sdp(scale),
         height = 62f.sdp(scale),
         enabled = enabled,
+        onClick = onClick,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun LanguageOptionButton(
+    label: String,
+    scale: Float,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    TvActionButton(
+        label = label,
+        scale = scale,
+        width = 556f.sdp(scale),
+        height = 54f.sdp(scale),
+        enabled = true,
         onClick = onClick,
         modifier = modifier,
     )

@@ -1,0 +1,18 @@
+<resources>
+    <plurals name="camera_count">
+        <item quantity="one">%1$d kamera</item>
+        <item quantity="other">%1$d kamera</item>
+    </plurals>
+    <plurals name="camera_count_connected">
+        <item quantity="one">%1$d kamera bağlı.</item>
+        <item quantity="other">%1$d kamera bağlı.</item>
+    </plurals>
+    <plurals name="mosaic_summary_camera_count">
+        <item quantity="one">Mozaik %1$d: %2$d kamera</item>
+        <item quantity="other">Mozaik %1$d: %2$d kamera</item>
+    </plurals>
+    <plurals name="outside_mosaic_camera_count">
+        <item quantity="one">Mozaik dışında: %1$d kamera</item>
+        <item quantity="other">Mozaik dışında: %1$d kamera</item>
+    </plurals>
+</resources>

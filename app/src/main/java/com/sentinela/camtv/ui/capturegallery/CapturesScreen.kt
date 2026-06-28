@@ -35,6 +35,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -44,8 +45,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.sentinela.camtv.R
 import com.sentinela.camtv.ui.design.SentinelaTransientMessage
 import com.sentinela.camtv.ui.design.SentinelaTvColors
+import com.sentinela.camtv.ui.text.asString
 
 @Composable
 fun CapturesScreen(
@@ -82,14 +85,14 @@ fun CapturesScreen(
                 .align(Alignment.Center),
         ) {
             Text(
-                text = "Capturas",
+                text = stringResource(R.string.captures_title),
                 modifier = Modifier.offset(x = 76f.sdp(scale), y = 64f.sdp(scale)),
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 31f.ssp(scale),
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "Fotos e vídeos gravados a partir da tela cheia.",
+                text = stringResource(R.string.captures_subtitle),
                 modifier = Modifier.offset(x = 78f.sdp(scale), y = 108f.sdp(scale)),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 18f.ssp(scale),
@@ -109,20 +112,20 @@ fun CapturesScreen(
             ) {
                 if (customPhotoLocationEnabled) {
                     CapturesActionButton(
-                        label = "Alterar local",
+                        label = stringResource(R.string.captures_change_location),
                         scale = scale,
                         onClick = onChoosePhotoLocation,
                         modifier = Modifier.focusRequester(focusRequester),
                     )
                     CapturesActionButton(
-                        label = "Usar local padrão",
+                        label = stringResource(R.string.captures_use_default_location),
                         scale = scale,
                         onClick = onUseDefaultPhotoLocation,
                         enabled = state.usingCustomLocation,
                     )
                 }
                 CapturesActionButton(
-                    label = "Ir para início",
+                    label = stringResource(R.string.mosaic_quick_home),
                     scale = scale,
                     onClick = onOpenHome,
                     modifier = if (customPhotoLocationEnabled) Modifier else Modifier.focusRequester(focusRequester),
@@ -134,30 +137,30 @@ fun CapturesScreen(
                 verticalArrangement = Arrangement.spacedBy(14f.sdp(scale)),
             ) {
                 CaptureInfoCard(
-                    title = "Fotos",
+                    title = stringResource(R.string.captures_photos_title),
                     lines = listOf(
-                        "Local: ${state.photoLocationLabel}",
-                        state.photoLocationDescription,
-                        "Formato: JPG, qualidade 92.",
-                        "Conteúdo: vídeo limpo, sem overlays do app.",
+                        stringResource(R.string.captures_location_line, state.photoLocationLabel.asString()),
+                        state.photoLocationDescription.asString(),
+                        stringResource(R.string.captures_photo_format),
+                        stringResource(R.string.captures_clean_video),
                     ),
                     scale = scale,
                 )
                 CaptureInfoCard(
-                    title = "Gravação de vídeo",
-                    lines = recordingInfoLines(),
+                    title = stringResource(R.string.captures_recording_title),
+                    lines = localizedRecordingInfoLines(),
                     scale = scale,
                 )
                 CaptureInfoCard(
-                    title = "Armazenamento externo",
-                    lines = storageInfoLines(customPhotoLocationEnabled),
+                    title = stringResource(R.string.captures_storage_title),
+                    lines = localizedStorageInfoLines(customPhotoLocationEnabled),
                     scale = scale,
                 )
             }
 
             state.message?.let { message ->
                 SentinelaTransientMessage(
-                    message = message,
+                    message = message.asString(),
                     onTimeout = onMessageTimeout,
                     modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 30f.sdp(scale)),
                 )
@@ -166,11 +169,32 @@ fun CapturesScreen(
     }
 }
 
+@Composable
+private fun localizedRecordingInfoLines(): List<String> = listOf(
+    stringResource(R.string.captures_recording_available_fullscreen),
+    stringResource(R.string.captures_recording_use_buttons),
+    stringResource(R.string.captures_recording_format),
+)
+
 internal fun recordingInfoLines(): List<String> = listOf(
     "Disponível na tela cheia pelo Menu Rápido.",
     "Use Iniciar gravação e Parar gravação.",
     "Formato: MP4, com áudio quando a câmera enviar áudio compatível.",
 )
+
+@Composable
+private fun localizedStorageInfoLines(customPhotoLocationEnabled: Boolean): List<String> =
+    if (customPhotoLocationEnabled) {
+        listOf(
+            stringResource(R.string.captures_storage_choose_folder),
+            stringResource(R.string.captures_storage_external_support),
+        )
+    } else {
+        listOf(
+            stringResource(R.string.captures_storage_custom_unavailable),
+            stringResource(R.string.captures_storage_default_folders),
+        )
+    }
 
 internal fun storageInfoLines(customPhotoLocationEnabled: Boolean): List<String> =
     if (customPhotoLocationEnabled) {

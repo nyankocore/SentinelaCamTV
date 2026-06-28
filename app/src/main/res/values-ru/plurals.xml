@@ -1,0 +1,26 @@
+<resources>
+    <plurals name="camera_count">
+        <item quantity="one">%1$d камера</item>
+        <item quantity="few">%1$d камеры</item>
+        <item quantity="many">%1$d камер</item>
+        <item quantity="other">%1$d камеры</item>
+    </plurals>
+    <plurals name="camera_count_connected">
+        <item quantity="one">%1$d камера подключена.</item>
+        <item quantity="few">%1$d камеры подключены.</item>
+        <item quantity="many">%1$d камер подключено.</item>
+        <item quantity="other">%1$d камеры подключены.</item>
+    </plurals>
+    <plurals name="mosaic_summary_camera_count">
+        <item quantity="one">Мозаика %1$d: %2$d камера</item>
+        <item quantity="few">Мозаика %1$d: %2$d камеры</item>
+        <item quantity="many">Мозаика %1$d: %2$d камер</item>
+        <item quantity="other">Мозаика %1$d: %2$d камеры</item>
+    </plurals>
+    <plurals name="outside_mosaic_camera_count">
+        <item quantity="one">Вне мозаики: %1$d камера</item>
+        <item quantity="few">Вне мозаики: %1$d камеры</item>
+        <item quantity="many">Вне мозаики: %1$d камер</item>
+        <item quantity="other">Вне мозаики: %1$d камеры</item>
+    </plurals>
+</resources>

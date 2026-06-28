@@ -18,18 +18,20 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.media3.ui.PlayerView
+import com.sentinela.camtv.R
 import com.sentinela.camtv.player.DvrRtspUrlBuilder
 import com.sentinela.camtv.ui.common.QuickMenu
 import com.sentinela.camtv.ui.common.QuickMenuAction
 import com.sentinela.camtv.ui.design.SentinelaOverlayCard
 import com.sentinela.camtv.ui.design.SentinelaTransientMessage
 import com.sentinela.camtv.ui.design.SentinelaTvColors
-import com.sentinela.camtv.ui.labels.audioLabel
-import com.sentinela.camtv.ui.labels.infoMenuLabel
-import com.sentinela.camtv.ui.labels.streamQualityLabel
-import com.sentinela.camtv.ui.labels.transmissionModeMenuLabel
+import com.sentinela.camtv.ui.labels.localizedAudioLabel
+import com.sentinela.camtv.ui.labels.localizedInfoMenuLabel
+import com.sentinela.camtv.ui.labels.localizedStreamQualityLabel
+import com.sentinela.camtv.ui.labels.localizedTransmissionModeMenuLabel
 import com.sentinela.camtv.ui.mosaic.MosaicNavigationDirection
 import kotlinx.coroutines.delay
 
@@ -172,17 +174,23 @@ private fun FullscreenQuickMenu(
 ) {
     QuickMenu(
         actions = listOf(
-            QuickMenuAction(audioLabel(state.audioMode), onToggleAudio),
-            QuickMenuAction(streamQualityLabel(state.streamQuality), onToggleStreamQuality),
-            QuickMenuAction(infoMenuLabel(state.showInfo), onToggleInfo),
-            QuickMenuAction(transmissionModeMenuLabel(state.transmissionMode), onToggleTransmissionMode),
-            QuickMenuAction("Tirar foto", onTakePhoto),
+            QuickMenuAction(localizedAudioLabel(state.audioMode), onToggleAudio),
+            QuickMenuAction(localizedStreamQualityLabel(state.streamQuality), onToggleStreamQuality),
+            QuickMenuAction(localizedInfoMenuLabel(state.showInfo), onToggleInfo),
+            QuickMenuAction(localizedTransmissionModeMenuLabel(state.transmissionMode), onToggleTransmissionMode),
+            QuickMenuAction(stringResource(R.string.fullscreen_take_photo), onTakePhoto),
             QuickMenuAction(
-                label = fullscreenRecordingMenuLabel(recordingProbeActive),
+                label = stringResource(
+                    if (recordingProbeActive) {
+                        R.string.fullscreen_stop_recording
+                    } else {
+                        R.string.fullscreen_start_recording
+                    },
+                ),
                 onClick = if (recordingProbeActive) onStopRecordingProbe else onStartRecordingProbe,
             ),
-            QuickMenuAction("Ir para início", onOpenHome),
-            QuickMenuAction("Sair do app", onExitApp),
+            QuickMenuAction(stringResource(R.string.mosaic_quick_home), onOpenHome),
+            QuickMenuAction(stringResource(R.string.mosaic_quick_exit_app), onExitApp),
         ),
         modifier = modifier,
     )
@@ -195,7 +203,7 @@ private fun OpeningFullscreenMessage() {
         contentAlignment = Alignment.Center,
     ) {
         FullscreenOverlayCard(
-            text = "Abrindo câmera...",
+            text = stringResource(R.string.fullscreen_opening_camera),
         )
     }
 }
@@ -205,7 +213,7 @@ private fun FullscreenQuickMenuHint(
     modifier: Modifier = Modifier,
 ) {
     FullscreenOverlayCard(
-        text = "Pressione OK/Enter para abrir o menu rápido.",
+        text = stringResource(R.string.fullscreen_quick_menu_hint),
         modifier = modifier.padding(bottom = 28.dp),
     )
 }

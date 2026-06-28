@@ -2,6 +2,7 @@ package com.sentinela.camtv.ui.cameras
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sentinela.camtv.R
 import com.sentinela.camtv.data.camera.CameraRepository
 import com.sentinela.camtv.data.camera.RtspUrlSanitizer
 import com.sentinela.camtv.data.mosaic.MosaicLayoutRepository
@@ -15,6 +16,7 @@ import com.sentinela.camtv.player.RtspConnectionTestResult
 import com.sentinela.camtv.player.RtspConnectionTester
 import com.sentinela.camtv.player.userMessage
 import com.sentinela.camtv.preferences.SettingsRepository
+import com.sentinela.camtv.ui.text.UiText
 import com.sentinela.onvif.DiscoveredOnvifDevice
 import com.sentinela.onvif.OnvifCredentials
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,9 +43,9 @@ data class CameraManagerUiState(
     val scanning: Boolean = false,
     val saving: Boolean = false,
     val rtspConnecting: Boolean = false,
-    val authDialogMessage: String? = null,
+    val authDialogMessage: UiText? = null,
     val authDialogAction: CameraManagerDialogAction? = null,
-    val statusMessage: String? = null,
+    val statusMessage: UiText? = null,
 ) {
     val selectedDevice: DiscoveredOnvifDevice?
         get() = discoveredDevices.firstOrNull { device -> device.stableKey() == selectedDeviceKey }
@@ -76,9 +78,9 @@ class CameraManagerViewModel(
     private val scanning = MutableStateFlow(false)
     private val saving = MutableStateFlow(false)
     private val rtspConnecting = MutableStateFlow(false)
-    private val authDialogMessage = MutableStateFlow<String?>(null)
+    private val authDialogMessage = MutableStateFlow<UiText?>(null)
     private val authDialogAction = MutableStateFlow<CameraManagerDialogAction?>(null)
-    private val statusMessage = MutableStateFlow<String?>(null)
+    private val statusMessage = MutableStateFlow<UiText?>(null)
 
     init {
         viewModelScope.launch {
@@ -132,9 +134,9 @@ class CameraManagerViewModel(
             scanning = values[12] as Boolean,
             saving = values[13] as Boolean,
             rtspConnecting = values[14] as Boolean,
-            authDialogMessage = values[15] as String?,
+            authDialogMessage = values[15] as UiText?,
             authDialogAction = values[16] as CameraManagerDialogAction?,
-            statusMessage = values[17] as String?,
+            statusMessage = values[17] as UiText?,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -147,19 +149,22 @@ class CameraManagerViewModel(
             authDialogMessage.value = null
             authDialogAction.value = null
             scanning.value = true
-            statusMessage.value = "Procurando dispositivos ONVIF..."
+            statusMessage.value = UiText.Resource(R.string.camera_onvif_scanning_status)
             onvifRepository.discover()
                 .onSuccess { devices ->
                     discoveredDevices.value = devices
                     selectedDeviceKey.value = devices.firstOrNull()?.stableKey()
                     statusMessage.value = if (devices.isEmpty()) {
-                        "Nenhum dispositivo ONVIF encontrado."
+                        UiText.Resource(R.string.camera_onvif_none_found)
                     } else {
-                        "${devices.size} dispositivo(s) encontrado(s)."
+                        UiText.Resource(R.string.camera_onvif_found_count, listOf(devices.size))
                     }
                 }
                 .onFailure { error ->
-                    val message = "Falha na descoberta ONVIF: ${error.message ?: "erro desconhecido"}"
+                    val message = UiText.Resource(
+                        R.string.camera_onvif_discovery_failed,
+                        listOf(error.message ?: "erro desconhecido"),
+                    )
                     statusMessage.value = message
                     authDialogMessage.value = message
                     authDialogAction.value = null
@@ -212,33 +217,33 @@ class CameraManagerViewModel(
             val isFirstRegistration = currentState.cameras.isEmpty()
             val device = currentState.selectedDevice
             if (device == null) {
-                authDialogMessage.value = "Selecione um dispositivo ONVIF."
+                authDialogMessage.value = UiText.Resource(R.string.camera_select_onvif_device)
                 authDialogAction.value = null
                 return@launch
             }
 
             val deviceServiceUrl = device.primaryXAddr()
             if (deviceServiceUrl.isNullOrBlank()) {
-                authDialogMessage.value = "O dispositivo ONVIF não informou endereço de serviço."
+                authDialogMessage.value = UiText.Resource(R.string.camera_onvif_missing_service)
                 authDialogAction.value = null
                 return@launch
             }
 
             saving.value = true
-            statusMessage.value = "Consultando serviços ONVIF..."
+            statusMessage.value = UiText.Resource(R.string.camera_onvif_query_services)
 
             runCatching {
                 val credentials = currentState.credentialsOrNull()
                 val capabilities = onvifRepository.getCapabilities(deviceServiceUrl, credentials).getOrThrow()
                 val mediaServiceUrl = capabilities.mediaXAddr ?: deviceServiceUrl
 
-                statusMessage.value = "Consultando perfis de mídia..."
+                statusMessage.value = UiText.Resource(R.string.camera_onvif_query_profiles)
                 val profiles = onvifRepository.getProfiles(mediaServiceUrl, credentials).getOrThrow()
                 if (profiles.isEmpty()) {
                     error("Nenhum perfil de mídia ONVIF encontrado.")
                 }
 
-                statusMessage.value = "Obtendo URLs RTSP..."
+                statusMessage.value = UiText.Resource(R.string.camera_onvif_get_rtsp_urls)
                 val resolvedProfiles = profiles.map { profile ->
                     ResolvedOnvifProfile(
                         profile = profile,
@@ -274,10 +279,10 @@ class CameraManagerViewModel(
                     )
                 }
             }.onSuccess {
-                authDialogMessage.value = cameraConnectedMessage(isFirstRegistration)
+                authDialogMessage.value = cameraConnectedUiText(isFirstRegistration)
                 authDialogAction.value = cameraConnectedAction(isFirstRegistration)
             }.onFailure { error ->
-                authDialogMessage.value = error.toOnvifUserMessage()
+                authDialogMessage.value = UiText.Raw(error.toOnvifUserMessage())
                 authDialogAction.value = null
             }
 
@@ -298,7 +303,7 @@ class CameraManagerViewModel(
                 password = state.value.rtspPassword,
             )
             if (validation is RtspCameraFormValidation.Invalid) {
-                authDialogMessage.value = validation.message
+                authDialogMessage.value = UiText.Raw(validation.message)
                 authDialogAction.value = null
                 return@launch
             }
@@ -311,7 +316,7 @@ class CameraManagerViewModel(
 
             rtspCameraDraftRepository.saveDraft(draft)
             rtspConnecting.value = true
-            statusMessage.value = "Conectando RTSP..."
+            statusMessage.value = UiText.Resource(R.string.camera_rtsp_connecting_status)
 
             val mainResult = testRtspUrl(
                 url = form.mainRtspUrl,
@@ -320,7 +325,9 @@ class CameraManagerViewModel(
                 streamName = "Fluxo principal",
             )
             if (mainResult is RtspConnectionTestResult.Failure) {
-                authDialogMessage.value = mainResult.userMessage("Fluxo principal")
+                authDialogMessage.value = UiText.Raw(
+                    mainResult.userMessage("Fluxo principal") ?: "Fluxo principal: erro desconhecido",
+                )
                 authDialogAction.value = null
                 rtspConnecting.value = false
                 return@launch
@@ -335,7 +342,9 @@ class CameraManagerViewModel(
                     streamName = "Fluxo secundário",
                 )
                 if (subResult is RtspConnectionTestResult.Failure) {
-                    authDialogMessage.value = subResult.userMessage("Fluxo secundário")
+                    authDialogMessage.value = UiText.Raw(
+                        subResult.userMessage("Fluxo secundário") ?: "Fluxo secundário: erro desconhecido",
+                    )
                     authDialogAction.value = null
                     rtspConnecting.value = false
                     return@launch
@@ -357,10 +366,13 @@ class CameraManagerViewModel(
                 rtspMainUrl.value = draft.mainUrl
                 rtspSubUrl.value = draft.subUrl
                 rtspPassword.value = ""
-                authDialogMessage.value = cameraConnectedMessage(isFirstRegistration)
+                authDialogMessage.value = cameraConnectedUiText(isFirstRegistration)
                 authDialogAction.value = cameraConnectedAction(isFirstRegistration)
             }.onFailure { error ->
-                authDialogMessage.value = "Não foi possível salvar a câmera: ${error.message ?: "URL inválida"}"
+                authDialogMessage.value = UiText.Resource(
+                    R.string.camera_save_failed,
+                    listOf(error.message ?: "URL inválida"),
+                )
                 authDialogAction.value = null
             }
 
@@ -374,7 +386,7 @@ class CameraManagerViewModel(
         password: String?,
         streamName: String,
     ): RtspConnectionTestResult {
-        statusMessage.value = "Conectando $streamName..."
+        statusMessage.value = UiText.Resource(R.string.camera_rtsp_connecting_stream, listOf(streamName))
         return rtspConnectionTester.test(
             RtspUrlSanitizer.withCredentials(
                 sanitizedUrl = url,
@@ -422,6 +434,15 @@ internal fun cameraConnectedMessage(isFirstRegistration: Boolean): String =
     } else {
         "Câmera(s) conectada(s)."
     }
+
+internal fun cameraConnectedUiText(isFirstRegistration: Boolean): UiText =
+    UiText.Resource(
+        if (isFirstRegistration) {
+            R.string.camera_connected_first_message
+        } else {
+            R.string.camera_connected_message
+        },
+    )
 
 internal fun cameraConnectedAction(isFirstRegistration: Boolean): CameraManagerDialogAction? =
     if (isFirstRegistration) CameraManagerDialogAction.ORGANIZE_MOSAIC else null

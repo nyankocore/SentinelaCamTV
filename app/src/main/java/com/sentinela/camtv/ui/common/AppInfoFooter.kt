@@ -5,11 +5,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.sentinela.camtv.R
 
 @Composable
 fun AppInfoFooter(
@@ -20,11 +22,11 @@ fun AppInfoFooter(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
-        AppInfoFooterText("Versão: $versionName", scale)
+        AppInfoFooterText(stringResource(R.string.footer_version, versionName), scale)
         Spacer(Modifier.height(8f.sdp(scale)))
-        AppInfoFooterText("Licença: $license", scale)
+        AppInfoFooterText(stringResource(R.string.footer_license, license), scale)
         Spacer(Modifier.height(8f.sdp(scale)))
-        AppInfoFooterText("Site: $siteLabel", scale)
+        AppInfoFooterText(stringResource(R.string.footer_site, siteLabel), scale)
     }
 }
 

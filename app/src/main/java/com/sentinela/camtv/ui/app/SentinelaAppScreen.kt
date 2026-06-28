@@ -45,15 +45,24 @@ fun SentinelaAppScreen() {
     val activity = remember(context) { context.findActivity() }
     val appViewModel: AppViewModel = viewModel(factory = viewModelFactory)
     val appState by appViewModel.state.collectAsState()
+    val settingsViewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
+    val settingsState by settingsViewModel.state.collectAsState()
 
     when (appState.destination) {
         AppDestination.Loading -> LoadingScreen()
         AppDestination.Home -> {
             HomeScreen(
+                settingsState = settingsState,
                 onOpenMosaic = appViewModel::openMosaic,
                 onOpenCameras = appViewModel::openCameras,
                 onOpenCaptures = appViewModel::openCaptures,
                 onOpenSettings = appViewModel::openSettings,
+                onCheckForUpdate = settingsViewModel::checkForUpdate,
+                onDownloadUpdate = settingsViewModel::downloadUpdate,
+                onInstallDownloadedUpdate = settingsViewModel::installDownloadedUpdate,
+                onResumeAfterUpdatePermission = settingsViewModel::retryInstallerAfterPermissionResume,
+                onDismissUpdateDialog = settingsViewModel::dismissUpdateDialog,
+                onSelectLanguage = settingsViewModel::selectAppLanguage,
             )
         }
         AppDestination.Mosaic -> MosaicScreen(
@@ -129,18 +138,10 @@ fun SentinelaAppScreen() {
             )
         }
         AppDestination.Settings -> {
-            val settingsViewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
-            val settingsState by settingsViewModel.state.collectAsState()
             SettingsScreen(
                 state = settingsState,
                 onExportSupportLogs = settingsViewModel::exportSupportLogs,
                 onExportCrashReport = settingsViewModel::exportCrashReport,
-                onCheckForUpdate = settingsViewModel::checkForUpdate,
-                onDownloadUpdate = settingsViewModel::downloadUpdate,
-                onInstallDownloadedUpdate = settingsViewModel::installDownloadedUpdate,
-                onResumeAfterUpdatePermission = settingsViewModel::retryInstallerAfterPermissionResume,
-                onDismissUpdateDialog = settingsViewModel::dismissUpdateDialog,
-                onOpenHome = appViewModel::openHome,
                 onBack = appViewModel::goBack,
             )
         }

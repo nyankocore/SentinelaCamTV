@@ -35,4 +35,9 @@ class PlayerUiPreferencesTest {
     fun mosaicStreamQualityDefaultsToSd() {
         assertEquals(StreamQuality.SD, PlayerUiPreferences().mosaicStreamQuality)
     }
+
+    @Test
+    fun appLanguageDefaultsToSystem() {
+        assertEquals(null, PlayerUiPreferences().appLanguageTag)
+    }
 }

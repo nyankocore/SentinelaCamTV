@@ -42,6 +42,7 @@ class SentinelaViewModelFactory(
             logRepository = container.logRepository,
             updateRepository = container.updateRepository,
             appUpdateInstaller = container.appUpdateInstaller,
+            settingsRepository = container.settingsRepository,
         )
         else -> error("ViewModel sem factory manual: ${modelClass.name}")
     } as T

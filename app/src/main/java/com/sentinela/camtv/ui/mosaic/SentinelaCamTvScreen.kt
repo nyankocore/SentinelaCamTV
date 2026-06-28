@@ -29,10 +29,13 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.ui.PlayerView
+import com.sentinela.camtv.R
 import com.sentinela.camtv.capture.CaptureRepository
 import com.sentinela.camtv.capture.CaptureRequest
 import com.sentinela.camtv.capture.userMessage as captureUserMessage
@@ -54,11 +57,12 @@ import com.sentinela.camtv.ui.design.SentinelaOverlayCard
 import com.sentinela.camtv.ui.design.SentinelaTvColors
 import com.sentinela.camtv.ui.design.SentinelaTvDialog
 import com.sentinela.camtv.ui.design.SentinelaTvSpacing
-import com.sentinela.camtv.ui.labels.infoMenuLabel
-import com.sentinela.camtv.ui.labels.streamQualityLabel
-import com.sentinela.camtv.ui.labels.transmissionModeMenuLabel
+import com.sentinela.camtv.ui.labels.localizedInfoMenuLabel
+import com.sentinela.camtv.ui.labels.localizedStreamQualityLabel
+import com.sentinela.camtv.ui.labels.localizedTransmissionModeMenuLabel
 import com.sentinela.camtv.ui.player.FullscreenCameraScreen
 import com.sentinela.camtv.ui.player.FullscreenPlayerViewModel
+import com.sentinela.camtv.ui.text.asString
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -91,6 +95,12 @@ fun MosaicScreen(
     var recordingStopSignal by remember { mutableStateOf<RecordingStopSignal?>(null) }
     var recordingJob by remember { mutableStateOf<Job?>(null) }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val photoUnavailableMessage = stringResource(R.string.mosaic_photo_unavailable)
+    val savingPhotoMessage = stringResource(R.string.mosaic_saving_photo)
+    val recordingUnavailableMessage = stringResource(R.string.mosaic_recording_unavailable)
+    val recordingStartedMessage = stringResource(R.string.mosaic_recording_started)
+    val recordingFinalizingMessage = stringResource(R.string.mosaic_recording_finalizing)
 
     BackHandler {
         if (shouldReturnHomeOnMosaicBack(state)) {
@@ -168,11 +178,11 @@ fun MosaicScreen(
                 val repository = captureRepository
                 val camera = fullscreenState.camera
                 if (repository == null || camera == null) {
-                    showFullscreenMessage("Não foi possível capturar a imagem da câmera agora.")
+                    showFullscreenMessage(photoUnavailableMessage)
                     return
                 }
                 coroutineScope.launch {
-                    showFullscreenMessage("Salvando foto...")
+                    showFullscreenMessage(savingPhotoMessage)
                     val result = repository.takePhoto(
                         request = CaptureRequest(
                             cameraName = camera.name,
@@ -180,7 +190,7 @@ fun MosaicScreen(
                         ),
                         playerView = fullscreenPlayerView,
                     )
-                    showFullscreenMessage(result.captureUserMessage())
+                    showFullscreenMessage(result.captureUserMessage().asString(context))
                 }
             }
 
@@ -189,7 +199,7 @@ fun MosaicScreen(
                 val camera = fullscreenState.camera
                 val rtspUrl = fullscreenRtspUrl
                 if (repository == null || camera == null || rtspUrl.isNullOrBlank()) {
-                    showFullscreenMessage("Gravação indisponível agora.")
+                    showFullscreenMessage(recordingUnavailableMessage)
                     return
                 }
                 if (recordingJob?.isActive == true) {
@@ -198,7 +208,7 @@ fun MosaicScreen(
                 val stopSignal = RecordingStopSignal()
                 recordingStopSignal = stopSignal
                 recordingJob = coroutineScope.launch {
-                    showFullscreenMessage("Gravando vídeo...")
+                    showFullscreenMessage(recordingStartedMessage)
                     val result = repository.recordVideoProbe(
                         request = RecordingProbeRequest(
                             cameraName = camera.name,
@@ -206,7 +216,7 @@ fun MosaicScreen(
                         ),
                         stopSignal = stopSignal,
                     )
-                    showFullscreenMessage(result.recordingUserMessage())
+                    showFullscreenMessage(result.recordingUserMessage().asString(context))
                     recordingStopSignal = null
                     recordingJob = null
                 }
@@ -214,7 +224,7 @@ fun MosaicScreen(
 
             fun stopRecordingProbe() {
                 recordingStopSignal?.stop()
-                showFullscreenMessage("Finalizando gravação...")
+                showFullscreenMessage(recordingFinalizingMessage)
             }
 
             FullscreenCameraScreen(
@@ -512,12 +522,12 @@ private fun MosaicQuickMenu(
 ) {
     QuickMenu(
         actions = listOf(
-            QuickMenuAction("Sair do app", onExitApp),
-            QuickMenuAction(infoMenuLabel(state.showInfo), onToggleInfo),
-            QuickMenuAction(streamQualityLabel(state.streamQuality), onToggleStreamQuality),
-            QuickMenuAction("Editar mosaico", onStartReorder),
-            QuickMenuAction(transmissionModeMenuLabel(state.transmissionMode), onToggleTransmissionMode),
-            QuickMenuAction("Ir para início", onOpenHome),
+            QuickMenuAction(stringResource(R.string.mosaic_quick_exit_app), onExitApp),
+            QuickMenuAction(localizedInfoMenuLabel(state.showInfo), onToggleInfo),
+            QuickMenuAction(localizedStreamQualityLabel(state.streamQuality), onToggleStreamQuality),
+            QuickMenuAction(stringResource(R.string.mosaic_quick_edit), onStartReorder),
+            QuickMenuAction(localizedTransmissionModeMenuLabel(state.transmissionMode), onToggleTransmissionMode),
+            QuickMenuAction(stringResource(R.string.mosaic_quick_home), onOpenHome),
         ),
         modifier = modifier,
     )
@@ -528,7 +538,7 @@ private fun ReorderHint(
     modifier: Modifier = Modifier,
 ) {
     SentinelaOverlayCard(
-        text = MosaicUiText.REORDER_HINT,
+        text = stringResource(R.string.mosaic_reorder_hint),
         maxWidth = 860.dp,
         modifier = modifier.padding(top = 14.dp),
     )
@@ -541,11 +551,11 @@ private fun CameraDeletionDialog(
     onConfirm: () -> Unit,
 ) {
     SentinelaTvDialog(
-        title = MosaicUiText.REMOVE_CAMERA_FROM_MOSAIC_CONFIRMATION,
-        message = "$cameraName\n\n${MosaicUiText.REMOVE_CAMERA_FROM_MOSAIC_MESSAGE}",
-        dismissLabel = "Cancelar",
+        title = stringResource(R.string.mosaic_remove_title),
+        message = "$cameraName\n\n${stringResource(R.string.mosaic_remove_message)}",
+        dismissLabel = stringResource(R.string.common_cancel),
         onDismiss = onDismiss,
-        confirmLabel = "Remover",
+        confirmLabel = stringResource(R.string.common_remove),
         onConfirm = onConfirm,
     )
 }
@@ -557,11 +567,11 @@ private fun MosaicSwitchDialog(
     onConfirm: () -> Unit,
 ) {
     SentinelaTvDialog(
-        title = "Trocar mosaico?",
-        message = "Abrir Mosaico ${target.toIndex + 1}. O mosaico atual será fechado para preservar desempenho.",
-        dismissLabel = "Cancelar",
+        title = stringResource(R.string.mosaic_switch_title),
+        message = stringResource(R.string.mosaic_switch_message, target.toIndex + 1),
+        dismissLabel = stringResource(R.string.common_cancel),
         onDismiss = onDismiss,
-        confirmLabel = "Abrir",
+        confirmLabel = stringResource(R.string.common_open),
         onConfirm = onConfirm,
     )
 }
@@ -572,7 +582,7 @@ private fun LoadingMosaicMessage() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        MosaicMessageCard("Carregando câmeras...")
+        MosaicMessageCard(stringResource(R.string.mosaic_loading))
     }
 }
 
@@ -608,9 +618,9 @@ private fun EmptyMosaicMessage(
     ) {
         MosaicMessageCard(
             if (hasRegisteredCameras) {
-                "Mosaico ativo vazio. Use esquerda ou direita para trocar de mosaico."
+                stringResource(R.string.mosaic_empty_active)
             } else {
-                "Nenhuma câmera cadastrada."
+                stringResource(R.string.mosaic_empty_no_cameras)
             },
         )
     }
@@ -623,7 +633,7 @@ private fun MissingDvrConfigMessage() {
         contentAlignment = Alignment.Center,
     ) {
         MosaicMessageCard(
-            message = "Configure sentinela.dvr.host no local.properties para testar canais DVR locais.",
+            message = stringResource(R.string.mosaic_missing_dvr_config),
         )
     }
 }

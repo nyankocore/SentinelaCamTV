@@ -1,8 +1,10 @@
 package com.sentinela.camtv.ui.settings
 
+import com.sentinela.camtv.R
 import com.sentinela.camtv.data.update.AppUpdateInstallResult
 import com.sentinela.camtv.data.update.AvailableUpdate
 import com.sentinela.camtv.data.update.DownloadedUpdate
+import com.sentinela.camtv.ui.text.UiText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -24,7 +26,7 @@ class UpdateUiStateReducerTest {
         assertTrue(state.waitingForInstallPermission)
         assertEquals(downloaded, state.downloadedUpdate)
         assertEquals(
-            "Permissão necessária. Ative a instalação por este app e volte para continuar.",
+            UiText.Resource(R.string.update_permission_required),
             state.message,
         )
     }
@@ -74,7 +76,7 @@ class UpdateUiStateReducerTest {
         assertFalse(state.waitingForInstallPermission)
         assertEquals(downloaded, state.downloadedUpdate)
         assertEquals(
-            "Instalador aberto. Confirme a atualização no Android.",
+            UiText.Resource(R.string.update_installer_opened),
             state.message,
         )
     }

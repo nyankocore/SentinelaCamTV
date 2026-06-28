@@ -1,6 +1,8 @@
 package com.sentinela.camtv.recording
 
 import android.net.Uri
+import com.sentinela.camtv.R
+import com.sentinela.camtv.ui.text.UiText
 
 data class RecordingProbeRequest(
     val cameraName: String,
@@ -30,20 +32,21 @@ enum class RecordingProbeError {
     WriteFailed,
 }
 
-fun RecordingProbeResult.userMessage(): String = when (this) {
-    is RecordingProbeResult.Success -> warning?.let { "Gravação salva: $locationLabel. $it" }
-        ?: "Gravação salva: $locationLabel"
+fun RecordingProbeResult.userMessage(): UiText = when (this) {
+    is RecordingProbeResult.Success -> warning?.let {
+        UiText.Resource(R.string.recording_saved_with_warning, listOf(locationLabel, it))
+    } ?: UiText.Resource(R.string.recording_saved, listOf(locationLabel))
     is RecordingProbeResult.Failure -> error.userMessage()
 }
 
-fun RecordingProbeError.userMessage(): String = when (this) {
-    RecordingProbeError.UnsupportedAndroid -> "Gravação indisponível neste Android."
-    RecordingProbeError.UnsupportedRtspSource -> "Gravação não suportada neste aparelho."
-    RecordingProbeError.UnsupportedVideoCodec -> "Este teste grava apenas vídeo H.264."
-    RecordingProbeError.NoVideoTrack -> "Não foi possível encontrar vídeo neste stream."
+fun RecordingProbeError.userMessage(): UiText = when (this) {
+    RecordingProbeError.UnsupportedAndroid -> UiText.Resource(R.string.recording_unsupported_android)
+    RecordingProbeError.UnsupportedRtspSource -> UiText.Resource(R.string.recording_unsupported_rtsp)
+    RecordingProbeError.UnsupportedVideoCodec -> UiText.Resource(R.string.recording_unsupported_video_codec)
+    RecordingProbeError.NoVideoTrack -> UiText.Resource(R.string.recording_no_video_track)
     RecordingProbeError.NoSamples,
     RecordingProbeError.WriteFailed,
-    -> "Falha ao gravar vídeo."
+    -> UiText.Resource(R.string.recording_failed)
 }
 
 class RecordingStopSignal {

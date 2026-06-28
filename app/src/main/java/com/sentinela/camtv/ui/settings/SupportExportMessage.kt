@@ -1,14 +1,14 @@
 package com.sentinela.camtv.ui.settings
 
+import com.sentinela.camtv.R
 import com.sentinela.camtv.config.ProjectLinks
+import com.sentinela.camtv.ui.text.UiText
 import java.io.File
 
 internal object SupportExportMessage {
-    fun forExportedFile(file: File): String =
-        "Arquivo gerado: ${file.absolutePath}\n\n" +
-            "1. Envie esse arquivo para um serviço de nuvem.\n" +
-            "2. Copie o link de compartilhamento do arquivo.\n" +
-            "3. Acesse:\n" +
-            "${ProjectLinks.ISSUES_URL}\n" +
-            "4. Crie um relato do problema e cole o link no texto."
+    fun forExportedFile(file: File): UiText =
+        UiText.Resource(
+            R.string.support_export_message,
+            listOf(file.absolutePath, ProjectLinks.ISSUES_URL),
+        )
 }

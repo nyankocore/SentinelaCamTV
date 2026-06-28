@@ -12,4 +12,5 @@ data class PlayerUiPreferences(
     val globalTransmissionMode: TransmissionMode = TransmissionMode.MENOR_LATENCIA,
     val activeMosaicIndex: Int = 0,
     val photoCaptureTreeUri: String? = null,
+    val appLanguageTag: String? = null,
 )

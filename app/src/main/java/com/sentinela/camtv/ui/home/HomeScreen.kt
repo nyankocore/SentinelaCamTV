@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,6 +38,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -44,25 +46,53 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.sentinela.camtv.BuildConfig
 import com.sentinela.camtv.R
 import com.sentinela.camtv.config.ProjectLinks
+import com.sentinela.camtv.localization.AppLanguage
 import com.sentinela.camtv.ui.common.AppInfoFooter
 import com.sentinela.camtv.ui.design.SentinelaTvColors
+import com.sentinela.camtv.ui.settings.LanguageDialog
+import com.sentinela.camtv.ui.settings.SettingsUiState
+import com.sentinela.camtv.ui.settings.UpdateStatusDialog
 
 @Composable
 fun HomeScreen(
+    settingsState: SettingsUiState,
     onOpenMosaic: () -> Unit,
     onOpenCameras: () -> Unit,
     onOpenCaptures: () -> Unit,
     onOpenSettings: () -> Unit,
+    onCheckForUpdate: () -> Unit,
+    onDownloadUpdate: () -> Unit,
+    onInstallDownloadedUpdate: () -> Unit,
+    onResumeAfterUpdatePermission: () -> Unit,
+    onDismissUpdateDialog: () -> Unit,
+    onSelectLanguage: (AppLanguage) -> Unit,
 ) {
     val focusRequester = remember { FocusRequester() }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var showLanguageDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
+    }
+
+    DisposableEffect(lifecycleOwner, onResumeAfterUpdatePermission) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                onResumeAfterUpdatePermission()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     BoxWithConstraints(
@@ -88,14 +118,14 @@ fun HomeScreen(
                     .size(width = 96f.sdp(scale), height = 88f.sdp(scale)),
             )
             Text(
-                text = "Sentinela Cam TV",
+                text = stringResource(R.string.home_title),
                 modifier = Modifier.offset(x = 258f.sdp(scale), y = 76f.sdp(scale)),
                 color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 34f.ssp(scale),
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "Monitoramento local, privado e open-source.",
+                text = stringResource(R.string.home_subtitle),
                 modifier = Modifier.offset(x = 260f.sdp(scale), y = 124f.sdp(scale)),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 18f.ssp(scale),
@@ -108,29 +138,45 @@ fun HomeScreen(
             )
 
             Column(
-                modifier = Modifier.offset(x = 78f.sdp(scale), y = 250f.sdp(scale)),
+                modifier = Modifier.offset(x = 78f.sdp(scale), y = 222f.sdp(scale)),
             ) {
                 HomeActionButton(
-                    label = "Ver câmeras",
+                    label = stringResource(R.string.home_action_view_cameras),
                     scale = scale,
                     onClick = onOpenMosaic,
                     modifier = Modifier.focusRequester(focusRequester),
                 )
-                Spacer(Modifier.height(16f.sdp(scale)))
+                Spacer(Modifier.height(12f.sdp(scale)))
                 HomeActionButton(
-                    label = "Cadastrar câmeras",
+                    label = stringResource(R.string.home_action_add_cameras),
                     scale = scale,
                     onClick = onOpenCameras,
                 )
-                Spacer(Modifier.height(16f.sdp(scale)))
+                Spacer(Modifier.height(12f.sdp(scale)))
                 HomeActionButton(
-                    label = "Capturas",
+                    label = stringResource(R.string.home_action_captures),
                     scale = scale,
                     onClick = onOpenCaptures,
                 )
-                Spacer(Modifier.height(16f.sdp(scale)))
+                Spacer(Modifier.height(12f.sdp(scale)))
                 HomeActionButton(
-                    label = "Suporte",
+                    label = stringResource(R.string.support_check_update),
+                    scale = scale,
+                    onClick = onCheckForUpdate,
+                    enabled = !settingsState.checkingForUpdate && !settingsState.downloadingUpdate,
+                )
+                Spacer(Modifier.height(12f.sdp(scale)))
+                HomeActionButton(
+                    label = stringResource(
+                        R.string.support_language_button,
+                        stringResource(settingsState.appLanguage.labelRes),
+                    ),
+                    scale = scale,
+                    onClick = { showLanguageDialog = true },
+                )
+                Spacer(Modifier.height(12f.sdp(scale)))
+                HomeActionButton(
+                    label = stringResource(R.string.home_action_support),
                     scale = scale,
                     onClick = onOpenSettings,
                 )
@@ -156,7 +202,7 @@ fun HomeScreen(
                 contentAlignment = Alignment.CenterStart,
             ) {
                 Text(
-                    text = "Privacidade por padrão. Sem anúncios, sem telemetria.",
+                    text = stringResource(R.string.home_privacy_card),
                     modifier = Modifier.offset(x = 24f.sdp(scale)),
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 18f.ssp(scale),
@@ -168,7 +214,29 @@ fun HomeScreen(
                 license = "GPL-3.0-or-later",
                 siteLabel = ProjectLinks.SITE_LABEL,
                 scale = scale,
-                modifier = Modifier.offset(x = 82f.sdp(scale), y = 598f.sdp(scale)),
+                modifier = Modifier.offset(x = 82f.sdp(scale), y = 638f.sdp(scale)),
+            )
+        }
+
+        if (settingsState.showUpdateDialog) {
+            UpdateStatusDialog(
+                state = settingsState,
+                scale = scale,
+                onDownloadUpdate = onDownloadUpdate,
+                onInstallDownloadedUpdate = onInstallDownloadedUpdate,
+                onDismiss = onDismissUpdateDialog,
+            )
+        }
+
+        if (showLanguageDialog) {
+            LanguageDialog(
+                selectedLanguage = settingsState.appLanguage,
+                scale = scale,
+                onSelectLanguage = { language ->
+                    onSelectLanguage(language)
+                    showLanguageDialog = false
+                },
+                onDismiss = { showLanguageDialog = false },
             )
         }
     }
@@ -179,18 +247,29 @@ private fun HomeActionButton(
     label: String,
     scale: Float,
     onClick: () -> Unit,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(18f.sdp(scale))
+    val backgroundColor = if (enabled) {
+        SentinelaTvColors.control
+    } else {
+        SentinelaTvColors.control.copy(alpha = 0.45f)
+    }
+    val contentColor = if (enabled) {
+        MaterialTheme.colorScheme.onBackground
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+    }
 
     Box(
         modifier = modifier
-            .width(342f.sdp(scale))
-            .height(64f.sdp(scale))
+            .width(390f.sdp(scale))
+            .height(56f.sdp(scale))
             .onFocusChanged { focused = it.isFocused }
             .onPreviewKeyEvent { event ->
-                if (event.type == KeyEventType.KeyUp && event.key.isConfirmKey()) {
+                if (enabled && event.type == KeyEventType.KeyUp && event.key.isConfirmKey()) {
                     onClick()
                     true
                 } else {
@@ -198,19 +277,19 @@ private fun HomeActionButton(
                 }
             }
             .semantics { role = Role.Button }
-            .background(SentinelaTvColors.control, shape)
+            .background(backgroundColor, shape)
             .border(
                 width = if (focused) 3f.sdp(scale) else 0.dp,
                 color = if (focused) SentinelaTvColors.controlFocused else Color.Transparent,
                 shape = shape,
             )
-            .focusable(),
+            .focusable(enabled),
         contentAlignment = Alignment.CenterStart,
     ) {
         Text(
             text = label,
             modifier = Modifier.offset(x = 32f.sdp(scale)),
-            color = MaterialTheme.colorScheme.onBackground,
+            color = contentColor,
             fontSize = 20f.ssp(scale),
             fontWeight = FontWeight.Bold,
         )

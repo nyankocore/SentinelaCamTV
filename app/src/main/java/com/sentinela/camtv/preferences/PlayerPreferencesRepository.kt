@@ -35,6 +35,7 @@ class PlayerPreferencesRepository(
                 ?: TransmissionMode.MENOR_LATENCIA,
             activeMosaicIndex = (preferences[ACTIVE_MOSAIC_INDEX] ?: 0).coerceIn(0, MOSAIC_COUNT - 1),
             photoCaptureTreeUri = preferences[PHOTO_CAPTURE_TREE_URI],
+            appLanguageTag = preferences[APP_LANGUAGE_TAG],
         )
     }
 
@@ -94,6 +95,16 @@ class PlayerPreferencesRepository(
         }
     }
 
+    override suspend fun setAppLanguageTag(tag: String?) {
+        dataStore.edit { preferences ->
+            if (tag.isNullOrBlank()) {
+                preferences.remove(APP_LANGUAGE_TAG)
+            } else {
+                preferences[APP_LANGUAGE_TAG] = tag
+            }
+        }
+    }
+
     private companion object {
         val SHOW_PLAYER_INFO = booleanPreferencesKey("show_player_info")
         val SHOW_MOSAIC_INFO = booleanPreferencesKey("show_mosaic_info")
@@ -103,6 +114,7 @@ class PlayerPreferencesRepository(
         val GLOBAL_TRANSMISSION_MODE = stringPreferencesKey("global_transmission_mode")
         val ACTIVE_MOSAIC_INDEX = intPreferencesKey("active_mosaic_index")
         val PHOTO_CAPTURE_TREE_URI = stringPreferencesKey("photo_capture_tree_uri")
+        val APP_LANGUAGE_TAG = stringPreferencesKey("app_language_tag")
     }
 }
 

@@ -14,4 +14,5 @@ interface SettingsRepository {
     suspend fun setGlobalTransmissionMode(transmissionMode: TransmissionMode)
     suspend fun setActiveMosaicIndex(index: Int)
     suspend fun setPhotoCaptureTreeUri(uri: String?)
+    suspend fun setAppLanguageTag(tag: String?)
 }

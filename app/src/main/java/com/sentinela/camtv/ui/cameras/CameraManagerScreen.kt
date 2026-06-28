@@ -45,6 +45,8 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -63,6 +65,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.sentinela.camtv.R
 import com.sentinela.camtv.data.mosaic.MOSAIC_COUNT
 import com.sentinela.camtv.data.mosaic.MOSAIC_MAX_SLOTS
 import com.sentinela.camtv.domain.Camera
@@ -73,15 +76,16 @@ import com.sentinela.camtv.ui.common.SentinelaScreen
 import com.sentinela.camtv.ui.design.SentinelaTvColors
 import com.sentinela.camtv.ui.design.SentinelaTvSize
 import com.sentinela.camtv.ui.design.SentinelaTvDialog
+import com.sentinela.camtv.ui.text.asString
 import com.sentinela.onvif.DiscoveredOnvifDevice
 
 private enum class CameraManagerTab(
-    val label: String,
+    val labelRes: Int,
 ) {
-    ONVIF("ONVIF"),
-    RTSP("RTSP direto"),
-    CONNECTED("Conectadas"),
-    MOSAICS("Mosaicos"),
+    ONVIF(R.string.camera_tab_onvif),
+    RTSP(R.string.camera_tab_rtsp),
+    CONNECTED(R.string.camera_tab_connected),
+    MOSAICS(R.string.camera_tab_mosaics),
 }
 
 private object CameraTextFieldId {
@@ -331,13 +335,14 @@ fun CameraManagerScreen(
             }
 
             state.authDialogMessage?.let { message ->
+                val messageText = message.asString()
                 SentinelaTvDialog(
-                    title = cameraDialogTitle(message),
-                    message = message,
+                    title = localizedCameraDialogTitle(messageText),
+                    message = messageText,
                     confirmLabel = if (state.authDialogAction == CameraManagerDialogAction.ORGANIZE_MOSAIC) {
-                        "Organizar mosaico"
+                        stringResource(R.string.camera_organize_mosaic)
                     } else {
-                        "OK"
+                        stringResource(R.string.common_ok)
                     },
                     onConfirm = {
                         onDismissAuthDialog()
@@ -359,7 +364,7 @@ private fun CameraManagerHeader(
     onOpenMosaic: () -> Unit,
 ) {
     Column {
-        TitleText("Adicione câmeras por ONVIF ou RTSP direto.", metrics)
+        TitleText(stringResource(R.string.camera_header), metrics)
         Spacer(Modifier.height(metrics.dp(14f)))
         Row(
             modifier = Modifier
@@ -371,7 +376,7 @@ private fun CameraManagerHeader(
         ) {
             CameraManagerTab.entries.forEach { tab ->
                 SentinelaTab(
-                    label = tab.label,
+                    label = stringResource(tab.labelRes),
                     width = metrics.tabWidth(tab),
                     height = metrics.tabHeight,
                     metrics = metrics,
@@ -384,7 +389,7 @@ private fun CameraManagerHeader(
                 )
             }
             SentinelaActionButton(
-                label = "Ver câmeras",
+                label = stringResource(R.string.camera_action_view_cameras),
                 onClick = onOpenMosaic,
                 width = metrics.dp(176f),
                 height = metrics.tabHeight,
@@ -420,15 +425,19 @@ private fun OnvifTab(
         Column(
             modifier = Modifier.width(metrics.leftWidth),
         ) {
-            SectionHeading("Descoberta ONVIF", metrics)
-            SectionDescription("Procure dispositivos na rede local, selecione um e conecte com usuário e senha.", metrics)
+            SectionHeading(stringResource(R.string.camera_onvif_heading), metrics)
+            SectionDescription(stringResource(R.string.camera_onvif_description), metrics)
             Spacer(Modifier.height(metrics.dp(14f)))
             Row(
                 horizontalArrangement = Arrangement.spacedBy(metrics.dp(18f)),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SentinelaActionButton(
-                    label = if (state.scanning) "Procurando ONVIF..." else "Buscar ONVIF na rede",
+                    label = if (state.scanning) {
+                        stringResource(R.string.camera_onvif_searching)
+                    } else {
+                        stringResource(R.string.camera_onvif_search)
+                    },
                     onClick = onDiscoverOnvif,
                     enabled = !state.busy,
                     width = metrics.primaryButtonWidth,
@@ -437,7 +446,11 @@ private fun OnvifTab(
                     modifier = Modifier.focusRequester(focusRequesters.firstContent),
                 )
                 SentinelaActionButton(
-                    label = if (state.saving) "Conectando..." else "Conectar selecionado",
+                    label = if (state.saving) {
+                        stringResource(R.string.camera_connecting)
+                    } else {
+                        stringResource(R.string.camera_onvif_connect_selected)
+                    },
                     onClick = onSaveSelectedOnvifCamera,
                     enabled = !state.busy && state.selectedDevice != null,
                     width = metrics.secondaryButtonWidth,
@@ -457,12 +470,12 @@ private fun OnvifTab(
             Column(
                 modifier = Modifier.width(metrics.leftWidth),
             ) {
-                SectionHeading("Credenciais", metrics)
+                SectionHeading(stringResource(R.string.camera_credentials), metrics)
                 Spacer(Modifier.height(metrics.dp(10f)))
                 Row(horizontalArrangement = Arrangement.spacedBy(metrics.dp(24f))) {
                     SentinelaTextField(
                         fieldId = CameraTextFieldId.ONVIF_USERNAME,
-                        label = "Usuário",
+                        label = stringResource(R.string.camera_username),
                         value = state.username,
                         onValueChange = onUsernameChanged,
                         width = (metrics.leftWidth - metrics.dp(24f)) / 2,
@@ -480,7 +493,7 @@ private fun OnvifTab(
                     )
                     SentinelaTextField(
                         fieldId = CameraTextFieldId.ONVIF_PASSWORD,
-                        label = "Senha",
+                        label = stringResource(R.string.camera_password),
                         value = state.password,
                         onValueChange = onPasswordChanged,
                         width = (metrics.leftWidth - metrics.dp(24f)) / 2,
@@ -500,7 +513,7 @@ private fun OnvifTab(
                 }
             }
             InfoCard(
-                message = "Usuário e senha são salvos de forma criptografada neste aparelho.",
+                message = stringResource(R.string.camera_credentials_encrypted),
                 width = metrics.statusCardWidth,
                 height = metrics.dp(76f),
                 metrics = metrics,
@@ -509,7 +522,7 @@ private fun OnvifTab(
 
         Spacer(Modifier.height(metrics.dp(30f)))
 
-        SectionHeading("Dispositivos encontrados", metrics)
+        SectionHeading(stringResource(R.string.camera_devices_found), metrics)
         Spacer(Modifier.height(metrics.dp(10f)))
         OnvifDevicesRow(
             devices = state.discoveredDevices,
@@ -546,18 +559,18 @@ private fun RtspTab(
         Column(
             modifier = Modifier.width(metrics.leftWidth),
         ) {
-            SectionHeading("RTSP direto", metrics)
-            SectionDescription("Informe a URL RTSP e, se necessário, usuário e senha.", metrics)
+            SectionHeading(stringResource(R.string.camera_rtsp_heading), metrics)
+            SectionDescription(stringResource(R.string.camera_rtsp_description), metrics)
             Spacer(Modifier.height(metrics.dp(22f)))
             SentinelaTextField(
                 fieldId = CameraTextFieldId.RTSP_NAME,
-                label = "Nome",
+                label = stringResource(R.string.camera_name),
                 value = state.rtspName,
                 onValueChange = onRtspNameChanged,
                 width = metrics.dp(390f),
                 height = metrics.fieldHeight,
                 metrics = metrics,
-                placeholder = "Ex.: Portão",
+                placeholder = stringResource(R.string.camera_name_placeholder),
                 modifier = Modifier.focusRequester(focusRequesters.firstContent),
                 textInputOpen = textInputOpen,
                 onTextInputOpenChanged = onTextInputOpenChanged,
@@ -571,13 +584,13 @@ private fun RtspTab(
             ) {
                 SentinelaTextField(
                     fieldId = CameraTextFieldId.RTSP_MAIN_URL,
-                    label = "URL RTSP principal",
+                    label = stringResource(R.string.camera_rtsp_main_url),
                     value = state.rtspMainUrl,
                     onValueChange = onRtspMainUrlChanged,
                     width = metrics.leftWidth - metrics.compactButtonWidth - metrics.dp(18f),
                     height = metrics.fieldHeight,
                     metrics = metrics,
-                    placeholder = "rtsp://192.168.0.10:554/...",
+                    placeholder = stringResource(R.string.camera_rtsp_main_placeholder),
                     modifier = Modifier
                         .focusRequester(focusRequesters.rtspMainUrl)
                         .focusProperties {
@@ -590,7 +603,7 @@ private fun RtspTab(
                     onActiveEditingFieldIdChanged = onActiveEditingFieldIdChanged,
                 )
                 SentinelaActionButton(
-                    label = "Colar embaixo",
+                    label = stringResource(R.string.camera_copy_below),
                     onClick = onCopyRtspMainUrlToSubUrl,
                     enabled = !state.busy,
                     width = metrics.compactButtonWidth,
@@ -607,13 +620,13 @@ private fun RtspTab(
             Spacer(Modifier.height(metrics.dp(16f)))
             SentinelaTextField(
                 fieldId = CameraTextFieldId.RTSP_SUB_URL,
-                label = "URL RTSP secundária",
+                label = stringResource(R.string.camera_rtsp_sub_url),
                 value = state.rtspSubUrl,
                 onValueChange = onRtspSubUrlChanged,
                 width = metrics.leftWidth,
                 height = metrics.fieldHeight,
                 metrics = metrics,
-                placeholder = "Opcional",
+                placeholder = stringResource(R.string.common_optional),
                 modifier = Modifier
                     .focusRequester(focusRequesters.rtspSubUrl)
                     .focusProperties {
@@ -631,17 +644,17 @@ private fun RtspTab(
         Column(
             modifier = Modifier.width(metrics.rightWidth),
         ) {
-            SectionHeading("Credenciais", metrics)
+            SectionHeading(stringResource(R.string.camera_credentials), metrics)
             Spacer(Modifier.height(metrics.dp(16f)))
             SentinelaTextField(
                 fieldId = CameraTextFieldId.RTSP_USERNAME,
-                label = "Usuário",
+                label = stringResource(R.string.camera_username),
                 value = state.rtspUsername,
                 onValueChange = onRtspUsernameChanged,
                 width = metrics.rightWidth,
                 height = metrics.fieldHeight,
                 metrics = metrics,
-                placeholder = "Opcional",
+                placeholder = stringResource(R.string.common_optional),
                 modifier = Modifier
                     .focusRequester(focusRequesters.rtspUsername)
                     .focusProperties {
@@ -656,13 +669,13 @@ private fun RtspTab(
             Spacer(Modifier.height(metrics.dp(16f)))
             SentinelaTextField(
                 fieldId = CameraTextFieldId.RTSP_PASSWORD,
-                label = "Senha",
+                label = stringResource(R.string.camera_password),
                 value = state.rtspPassword,
                 onValueChange = onRtspPasswordChanged,
                 width = metrics.rightWidth,
                 height = metrics.fieldHeight,
                 metrics = metrics,
-                placeholder = "Opcional",
+                placeholder = stringResource(R.string.common_optional),
                 password = true,
                 modifier = Modifier
                     .focusRequester(focusRequesters.rtspPassword)
@@ -677,14 +690,18 @@ private fun RtspTab(
             )
             Spacer(Modifier.height(metrics.dp(14f)))
             InfoCard(
-                message = "Credenciais são criptografadas neste aparelho.",
+                message = stringResource(R.string.camera_credentials_encrypted_short),
                 width = metrics.rightWidth,
                 height = metrics.dp(58f),
                 metrics = metrics,
             )
             Spacer(Modifier.height(metrics.dp(12f)))
             SentinelaActionButton(
-                label = if (state.rtspConnecting) "Conectando..." else "Conectar",
+                label = if (state.rtspConnecting) {
+                    stringResource(R.string.camera_connecting)
+                } else {
+                    stringResource(R.string.camera_connect)
+                },
                 onClick = onConnectManualRtspCamera,
                 enabled = !state.busy,
                 width = metrics.rightWidth,
@@ -710,13 +727,13 @@ private fun ConnectedTab(
         Column(
             modifier = Modifier.width(metrics.leftWidth),
         ) {
-            SectionHeading("Câmeras conectadas", metrics)
-            SectionDescription(CONNECTED_TAB_DESCRIPTION, metrics)
+            SectionHeading(stringResource(R.string.camera_connected_heading), metrics)
+            SectionDescription(stringResource(R.string.camera_connected_description), metrics)
             Spacer(Modifier.height(metrics.dp(20f)))
             if (state.cameras.isEmpty()) {
                 CameraListItem(
-                    title = "Nenhuma câmera conectada",
-                    subtitle = "Use ONVIF ou RTSP direto para conectar uma câmera.",
+                    title = stringResource(R.string.camera_none_connected_title),
+                    subtitle = stringResource(R.string.camera_none_connected_subtitle),
                     height = metrics.rowCardHeight,
                     metrics = metrics,
                     modifier = Modifier
@@ -729,7 +746,7 @@ private fun ConnectedTab(
                 state.cameras.sortedBy { it.position }.take(5).forEachIndexed { index, camera ->
                     CameraListItem(
                         title = camera.name,
-                        subtitle = camera.connectedSubtitle(),
+                        subtitle = camera.localizedConnectedSubtitle(),
                         height = metrics.rowCardHeight,
                         metrics = metrics,
                         modifier = if (index == 0) {
@@ -755,21 +772,25 @@ private fun ConnectedTab(
             modifier = Modifier.width(metrics.rightWidth),
         ) {
             StatusCard(
-                title = "Status",
-                message = cameraCountText(state.cameras.size, suffix = " conectadas."),
+                title = stringResource(R.string.camera_status),
+                message = pluralStringResource(
+                    R.plurals.camera_count_connected,
+                    state.cameras.size,
+                    state.cameras.size,
+                ),
                 width = metrics.statusCardWidth,
                 height = metrics.dp(92f),
                 metrics = metrics,
             )
             Spacer(Modifier.height(metrics.dp(34f)))
-            SectionHeading("Resumo", metrics)
+            SectionHeading(stringResource(R.string.camera_summary), metrics)
             Spacer(Modifier.height(metrics.dp(14f)))
-            PanelText("ONVIF: ${state.cameras.count { it.source is OnvifCameraSource || it.source is DvrRtspChannel }}", metrics)
+            PanelText("${stringResource(R.string.camera_source_onvif)}: ${state.cameras.count { it.source is OnvifCameraSource || it.source is DvrRtspChannel }}", metrics)
             Spacer(Modifier.height(metrics.dp(12f)))
-            PanelText("RTSP direto: ${state.cameras.count { it.source is RtspCameraSource }}", metrics)
+            PanelText("${stringResource(R.string.camera_source_rtsp)}: ${state.cameras.count { it.source is RtspCameraSource }}", metrics)
             Spacer(Modifier.height(metrics.dp(88f)))
             SentinelaActionButton(
-                label = "Ver câmeras",
+                label = stringResource(R.string.camera_action_view_cameras),
                 onClick = onOpenMosaic,
                 width = metrics.dp(240f),
                 height = metrics.dp(56f),
@@ -810,13 +831,13 @@ private fun MosaicsTab(
         Column(
             modifier = Modifier.width(metrics.leftWidth),
         ) {
-            SectionHeading("Mosaicos", metrics)
-            SectionDescription(MOSAICS_TAB_DESCRIPTION, metrics)
+            SectionHeading(stringResource(R.string.camera_mosaics_heading), metrics)
+            SectionDescription(stringResource(R.string.camera_mosaics_description), metrics)
             Spacer(Modifier.height(metrics.dp(14f)))
             Row(horizontalArrangement = Arrangement.spacedBy(metrics.dp(12f))) {
                 repeat(MOSAIC_COUNT) { index ->
                     SentinelaActionButton(
-                        label = "Mosaico ${index + 1}",
+                        label = stringResource(R.string.camera_mosaic_name, index + 1),
                         onClick = { onSelectActiveMosaic(index) },
                         width = metrics.dp(150f),
                         height = metrics.dp(48f),
@@ -833,8 +854,8 @@ private fun MosaicsTab(
             Spacer(Modifier.height(metrics.dp(20f)))
             SectionDescription(
                 text = selectedCamera?.let { camera ->
-                    "Selecionada: ${camera.name}. Escolha um slot para mover ou trocar."
-                } ?: "Selecione uma câmera e escolha o slot de destino.",
+                    stringResource(R.string.camera_mosaic_selected_instruction, camera.name)
+                } ?: stringResource(R.string.camera_mosaic_instruction),
                 metrics = metrics,
             )
             Spacer(Modifier.height(metrics.dp(12f)))
@@ -857,8 +878,8 @@ private fun MosaicsTab(
         Column(
             modifier = Modifier.width(metrics.rightWidth),
         ) {
-            SectionHeading(OUTSIDE_MOSAIC_TITLE, metrics)
-            SectionDescription("Câmeras cadastradas que ainda não ocupam um slot.", metrics)
+            SectionHeading(stringResource(R.string.camera_outside_mosaic_title), metrics)
+            SectionDescription(stringResource(R.string.camera_outside_mosaic_description), metrics)
             Spacer(Modifier.height(metrics.dp(10f)))
             val unassigned = state.unassignedCameras()
             LazyColumn(
@@ -868,8 +889,8 @@ private fun MosaicsTab(
                 if (unassigned.isEmpty()) {
                     item {
                         CameraListItem(
-                            title = "Nenhuma câmera",
-                            subtitle = "Todas as câmeras estão em um mosaico.",
+                            title = stringResource(R.string.camera_no_outside_title),
+                            subtitle = stringResource(R.string.camera_no_outside_subtitle),
                             height = metrics.rowCardHeight,
                             metrics = metrics,
                         )
@@ -882,9 +903,9 @@ private fun MosaicsTab(
                         CameraListItem(
                             title = camera.name,
                             subtitle = if (camera.id == selectedCameraId) {
-                                "selecionada"
+                                stringResource(R.string.camera_selected)
                             } else {
-                                "${camera.source.connectedLabel()} - pressione OK para posicionar"
+                                "${camera.source.localizedConnectedLabel()} - ${stringResource(R.string.camera_press_ok_to_place)}"
                             },
                             height = metrics.rowCardHeight,
                             metrics = metrics,
@@ -895,15 +916,15 @@ private fun MosaicsTab(
             }
             Spacer(Modifier.height(metrics.dp(12f)))
             StatusCard(
-                title = "Resumo",
-                message = mosaicSummaryText(state),
+                title = stringResource(R.string.camera_summary),
+                message = localizedMosaicSummaryText(state),
                 width = metrics.statusCardWidth,
                 height = metrics.dp(116f),
                 metrics = metrics,
             )
             Spacer(Modifier.height(metrics.dp(12f)))
             SentinelaActionButton(
-                label = "Remover do mosaico",
+                label = stringResource(R.string.camera_remove_from_mosaic),
                 onClick = {
                     selectedCameraId?.let(onRemoveCameraFromMosaic)
                     selectedCameraId = null
@@ -1010,7 +1031,7 @@ private fun MosaicSlotButton(
                 ),
             )
             Text(
-                text = camera?.name ?: "Vazio",
+                text = camera?.name ?: stringResource(R.string.camera_empty_slot),
                 style = TextStyle(
                     color = if (occupied) {
                         MaterialTheme.colorScheme.onSurface
@@ -1042,8 +1063,8 @@ private fun OnvifDevicesRow(
     ) {
         if (devices.isEmpty()) {
             SelectableInfoItem(
-                title = "Nenhum dispositivo encontrado",
-                subtitle = "Use Buscar ONVIF na rede para atualizar a lista.",
+                title = stringResource(R.string.camera_no_device_found),
+                subtitle = stringResource(R.string.camera_refresh_onvif_list),
                 selected = false,
                 width = metrics.leftWidth,
                 height = metrics.dp(70f),
@@ -1067,8 +1088,8 @@ private fun OnvifDevicesRow(
             }
             if (devices.size == 1) {
                 SelectableInfoItem(
-                    title = "Nenhum outro dispositivo",
-                    subtitle = "Use Buscar ONVIF na rede para atualizar a lista.",
+                    title = stringResource(R.string.camera_no_other_device),
+                    subtitle = stringResource(R.string.camera_refresh_onvif_list),
                     selected = false,
                     width = (metrics.leftWidth - metrics.dp(20f)) / 2,
                     height = metrics.dp(70f),
@@ -1752,11 +1773,74 @@ internal fun mosaicSummaryText(state: CameraManagerUiState): String =
         if (unassignedCount != 1) append('s')
     }
 
+@Composable
+private fun localizedMosaicSummaryText(state: CameraManagerUiState): String =
+    buildString {
+        repeat(MOSAIC_COUNT) { index ->
+            if (index > 0) append('\n')
+            val count = state.mosaicSlots.count { slot -> slot.mosaicIndex == index }
+            append(
+                pluralStringResource(
+                    R.plurals.mosaic_summary_camera_count,
+                    count,
+                    index + 1,
+                    count,
+                ),
+            )
+        }
+        val unassignedCount = state.unassignedCameras().size
+        append('\n')
+        append(
+            pluralStringResource(
+                R.plurals.outside_mosaic_camera_count,
+                unassignedCount,
+                unassignedCount,
+            ),
+        )
+    }
+
 internal fun cameraDialogTitle(message: String): String =
     when {
         message.contains("conectada", ignoreCase = true) -> "Câmera(s) conectada(s)"
         message.contains("ONVIF", ignoreCase = true) -> "Falha ONVIF"
         else -> "Falha ao conectar câmera"
+    }
+
+@Composable
+private fun localizedCameraDialogTitle(message: String): String =
+    when {
+        message.contains("conectada", ignoreCase = true) -> stringResource(R.string.camera_connected_dialog_title)
+        message.contains("ONVIF", ignoreCase = true) -> stringResource(R.string.camera_onvif_failure_title)
+        else -> stringResource(R.string.camera_connection_failure_title)
+    }
+
+@Composable
+private fun Camera.localizedConnectedSubtitle(): String =
+    "${source.localizedConnectedLabel()} • ${localizedStreamLabel()}"
+
+@Composable
+private fun Any.localizedConnectedLabel(): String =
+    when (this) {
+        is DvrRtspChannel -> stringResource(R.string.camera_source_onvif)
+        is OnvifCameraSource -> stringResource(R.string.camera_source_onvif)
+        is RtspCameraSource -> stringResource(R.string.camera_source_rtsp)
+        else -> stringResource(R.string.camera_source_camera)
+    }
+
+@Composable
+private fun Camera.localizedStreamLabel(): String =
+    when (source) {
+        is DvrRtspChannel -> stringResource(R.string.camera_stream_main_sub)
+        is OnvifCameraSource -> if (source.subRtspUrl.isNullOrBlank()) {
+            stringResource(R.string.camera_stream_main)
+        } else {
+            stringResource(R.string.camera_stream_main_sub)
+        }
+        is RtspCameraSource -> if (source.subRtspUrl.isNullOrBlank()) {
+            stringResource(R.string.camera_stream_main)
+        } else {
+            stringResource(R.string.camera_stream_main_sub)
+        }
     }
 
 private fun Camera.connectedSubtitle(): String =

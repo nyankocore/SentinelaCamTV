@@ -1,6 +1,8 @@
 package com.sentinela.camtv.recording
 
+import com.sentinela.camtv.R
 import com.sentinela.camtv.diagnostics.DiagnosticsSanitizer
+import com.sentinela.camtv.ui.text.UiText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -15,7 +17,13 @@ class RecordingProbeModelsTest {
             uri = null,
         ).userMessage()
 
-        assertEquals("Gravação salva: Vídeos/Sentinela Cam TV", message)
+        assertEquals(
+            UiText.Resource(
+                R.string.recording_saved,
+                listOf(RecordingLocationLabels.STANDARD_VIDEOS),
+            ),
+            message,
+        )
     }
 
     @Test
@@ -38,7 +46,10 @@ class RecordingProbeModelsTest {
         ).userMessage()
 
         assertEquals(
-            "Gravação salva: Vídeos/Sentinela Cam TV. $RECORDING_WITHOUT_AUDIO_WARNING",
+            UiText.Resource(
+                R.string.recording_saved_with_warning,
+                listOf(RecordingLocationLabels.STANDARD_VIDEOS, RECORDING_WITHOUT_AUDIO_WARNING),
+            ),
             message,
         )
     }
@@ -46,7 +57,7 @@ class RecordingProbeModelsTest {
     @Test
     fun unsupportedRtspSourceUsesFriendlyMessage() {
         assertEquals(
-            "Gravação não suportada neste aparelho.",
+            UiText.Resource(R.string.recording_unsupported_rtsp),
             RecordingProbeError.UnsupportedRtspSource.userMessage(),
         )
     }
