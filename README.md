@@ -1,30 +1,47 @@
 # Sentinela Cam TV
 
-Sentinela Cam TV é um aplicativo open-source para visualizar câmeras de segurança em Android TV e Google TV.
+Sentinela Cam TV é um visualizador open-source de câmeras de segurança para Android TV e Google TV, pensado para uso com controle remoto.
 
-Ele foi criado para monitoramento local, com foco em privacidade, simplicidade e bom funcionamento em TVs e TV Boxes com hardware modesto.
+O aplicativo reúne câmeras RTSP e dispositivos ONVIF em mosaicos organizáveis, com reprodução local, tela cheia, fotos e gravações. O projeto prioriza privacidade, simplicidade e bom funcionamento em TVs e TV Boxes com hardware modesto.
 
-![Mosaico do Sentinela Cam TV](docs/images/mosaico-readme.png)
+![Mosaico atual do Sentinela Cam TV](docs/images/mosaico-readme.png)
 
 ## Principais recursos
 
-- Mosaico adaptativo para câmeras RTSP/ONVIF.
-- Até 3 mosaicos organizáveis, com slots independentes.
-- Tela cheia para cada câmera.
-- Troca direcional de câmeras na tela cheia usando o mapa do mosaico.
-- Cadastro por RTSP direto.
+- Mosaico adaptativo para câmeras RTSP e ONVIF.
+- Até 3 mosaicos independentes, com até 15 slots em cada um.
+- Organização e troca de câmeras entre slots sem duplicar streams em mosaicos diferentes.
+- Apenas o mosaico ativo mantém players abertos, preservando recursos do aparelho.
+- Tela cheia com troca direcional de câmera usando o mapa do mosaico.
 - Descoberta e cadastro por ONVIF.
+- Cadastro por URL RTSP direta.
 - Suporte a DVR/NVR com múltiplos canais quando expostos por ONVIF.
-- Alternância HD/SD e modos de menor latência/estabilidade.
-- Captura de foto da câmera em tela cheia.
-- Atualização manual pelo GitHub Releases.
-- Logs locais para suporte.
-- Interface pensada para controle remoto.
+- Alternância entre streams HD e SD.
+- Modos `Menor latência` e `Estabilidade`.
+- Captura de fotos e gravação de vídeos com áudio compatível na tela cheia.
+- Interface em português-BR, inglês, espanhol, turco, árabe e russo.
+- Seletor de idioma dentro do aplicativo.
+- Atualização manual e segura pelo GitHub Releases, com validação SHA-256.
+- Exportação manual de logs para suporte.
+- Navegação completa por controle remoto e D-Pad.
+
+## Modos de transmissão
+
+### Menor latência
+
+Perfil otimizado para uma conexão local estável, preferencialmente por **cabo Ethernet**. Usa buffers menores e tenta transmissão UDP primeiro para reduzir o atraso entre a câmera e a TV.
+
+### Estabilidade
+
+Perfil recomendado para redes sem fio, especialmente **Wi-Fi 2,4 GHz**, ou conexões sujeitas a oscilações. Usa TCP e buffers maiores para priorizar continuidade, com um pouco mais de atraso.
+
+Os ícones de Ethernet e Wi-Fi representam a recomendação de cada perfil. O aplicativo não detecta o tipo de conexão nem troca o modo automaticamente.
 
 ## Compatibilidade atual
 
 - Suporta câmeras fixas via RTSP/ONVIF.
 - ONVIF é usado para descoberta, autenticação e obtenção dos streams.
+- DVRs e NVRs podem fornecer vários canais por um único cadastro ONVIF.
 - No momento, o app não controla PTZ, zoom óptico, presets ou movimentação da câmera.
 - O foco atual é visualização local, não administração completa do dispositivo.
 
@@ -36,17 +53,15 @@ As câmeras são acessadas localmente. O aplicativo não envia imagens, credenci
 
 ## Download
 
-Baixe a versão mais recente na página de releases:
-
-https://github.com/nyankocore/SentinelaCamTV/releases/latest
+Baixe a versão mais recente em [GitHub Releases](https://github.com/nyankocore/SentinelaCamTV/releases/latest).
 
 Use o APK da ABI do seu aparelho quando souber qual é. Se não souber, use o APK `universal`.
 
+O arquivo `SHA256SUMS.txt` de cada release permite conferir a integridade dos APKs baixados.
+
 ## Suporte
 
-Relatos de bugs podem ser enviados pelas Issues:
-
-https://github.com/nyankocore/SentinelaCamTV/issues
+Relatos de bugs podem ser enviados pelas [Issues](https://github.com/nyankocore/SentinelaCamTV/issues).
 
 Os logs são exportados manualmente pelo usuário dentro do app. Nenhum log é enviado automaticamente.
 
