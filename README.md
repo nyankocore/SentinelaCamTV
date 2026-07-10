@@ -1,24 +1,22 @@
-# Sentinela Cam TV
+,# Sentinela Cam TV
 
-Sentinela Cam TV é um visualizador open-source de câmeras de segurança para Android TV e Google TV, pensado para uso com controle remoto.
+Sentinela Cam TV é um visualizador open-source de câmeras de segurança para Android TV e Google TV.
 
-O aplicativo reúne câmeras RTSP e dispositivos ONVIF em mosaicos organizáveis, com reprodução local, tela cheia, fotos e gravações. O projeto prioriza privacidade, simplicidade e bom funcionamento em TVs e TV Boxes com hardware modesto.
+O aplicativo visualiza câmeras da rede local via RTSP direto e ONVIF, com mosaicos organizáveis, tela cheia, foto e gravações. O projeto prioriza privacidade, simplicidade e bom funcionamento em TVs e TV Boxes com hardware modesto.
 
 ![Mosaico atual do Sentinela Cam TV](docs/images/mosaico-readme.png)
 
 ## Principais recursos
 
-- Mosaico adaptativo para câmeras RTSP e ONVIF.
+- Mosaico adaptativo que não deforma a imagem.
 - Até 3 mosaicos independentes, com até 15 slots em cada um.
-- Organização e troca de câmeras entre slots sem duplicar streams em mosaicos diferentes.
-- Apenas o mosaico ativo mantém players abertos, preservando recursos do aparelho.
 - Tela cheia com troca direcional de câmera usando o mapa do mosaico.
 - Descoberta e cadastro por ONVIF.
-- Cadastro por URL RTSP direta.
+- Cadastro por URL RTSP direto.
 - Suporte a DVR/NVR com múltiplos canais quando expostos por ONVIF.
 - Alternância entre streams HD e SD.
 - Modos `Menor latência` e `Estabilidade`.
-- Captura de fotos e gravação de vídeos com áudio compatível na tela cheia.
+- Captura de fotos e gravação de vídeos com áudio na tela cheia.
 - Interface em português-BR, inglês, espanhol, turco, árabe e russo.
 - Seletor de idioma dentro do aplicativo.
 - Atualização manual e segura pelo GitHub Releases, com validação SHA-256.
@@ -29,17 +27,15 @@ O aplicativo reúne câmeras RTSP e dispositivos ONVIF em mosaicos organizáveis
 
 ### Menor latência
 
-Perfil otimizado para uma conexão local estável, preferencialmente por **cabo Ethernet**. Usa buffers menores e tenta transmissão UDP primeiro para reduzir o atraso entre a câmera e a TV.
+Perfil otimizado para uma conexão local por **cabo Ethernet**. Usa buffers menores e tenta transmissão UDP primeiro para reduzir o atraso entre a câmera e a TV.
 
 ### Estabilidade
 
-Perfil recomendado para redes sem fio, especialmente **Wi-Fi 2,4 GHz**, ou conexões sujeitas a oscilações. Usa TCP e buffers maiores para priorizar continuidade, com um pouco mais de atraso.
-
-Os ícones de Ethernet e Wi-Fi representam a recomendação de cada perfil. O aplicativo não detecta o tipo de conexão nem troca o modo automaticamente.
+Perfil otimizado para **Wi-Fi 2,4 GHz**, ou conexões sujeitas a oscilações. Usa TCP e buffers maiores para priorizar continuidade, com um pouco mais de atraso.
 
 ## Compatibilidade atual
 
-- Suporta câmeras fixas via RTSP/ONVIF.
+- Suporta câmeras via RTSP/ONVIF.
 - ONVIF é usado para descoberta, autenticação e obtenção dos streams.
 - DVRs e NVRs podem fornecer vários canais por um único cadastro ONVIF.
 - No momento, o app não controla PTZ, zoom óptico, presets ou movimentação da câmera.
