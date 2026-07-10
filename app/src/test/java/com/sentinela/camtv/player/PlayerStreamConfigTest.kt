@@ -34,10 +34,10 @@ class PlayerStreamConfigTest {
         )
 
         assertEquals(RtspTransportMode.UdpFirst, config.transportMode)
-        assertEquals(100, config.bufferPreset.minBufferMs)
-        assertEquals(150, config.bufferPreset.maxBufferMs)
+        assertEquals(75, config.bufferPreset.minBufferMs)
+        assertEquals(125, config.bufferPreset.maxBufferMs)
         assertEquals(50, config.bufferPreset.bufferForPlaybackMs)
-        assertEquals(100, config.bufferPreset.bufferAfterRebufferMs)
+        assertEquals(75, config.bufferPreset.bufferAfterRebufferMs)
         assertEquals(3_000L, config.rtspTimeoutMs)
     }
 
@@ -50,10 +50,10 @@ class PlayerStreamConfigTest {
         )
 
         assertEquals(RtspTransportMode.TcpOnly, config.transportMode)
-        assertEquals(500, config.bufferPreset.minBufferMs)
-        assertEquals(1_500, config.bufferPreset.maxBufferMs)
-        assertEquals(250, config.bufferPreset.bufferForPlaybackMs)
-        assertEquals(500, config.bufferPreset.bufferAfterRebufferMs)
+        assertEquals(750, config.bufferPreset.minBufferMs)
+        assertEquals(2_000, config.bufferPreset.maxBufferMs)
+        assertEquals(350, config.bufferPreset.bufferForPlaybackMs)
+        assertEquals(750, config.bufferPreset.bufferAfterRebufferMs)
         assertEquals(3_000L, config.rtspTimeoutMs)
     }
 }

@@ -117,6 +117,7 @@
     <string name="mosaic_mode_low_latency">Menor latência</string>
     <string name="mosaic_mode_stability">Estabilidade</string>
     <string name="mosaic_reorder_hint">Selecione duas câmeras para trocar. Pressione OK por alguns segundos para remover uma câmera do mosaico. Pressione Back para concluir.</string>
+    <string name="mosaic_quick_menu_hint">Pressione Back/Retorno para abrir o menu rápido do mosaico.</string>
     <string name="mosaic_remove_title">Remover do mosaico?</string>
     <string name="mosaic_remove_message">A câmera continuará cadastrada.</string>
     <string name="mosaic_switch_title">Trocar mosaico?</string>
@@ -134,8 +135,8 @@
     <string name="fullscreen_take_photo">Tirar foto</string>
     <string name="fullscreen_opening_camera">Abrindo câmera...</string>
     <string name="fullscreen_quick_menu_hint">Pressione OK/Enter para abrir o menu rápido.</string>
-    <string name="fullscreen_start_recording">Iniciar gravação</string>
-    <string name="fullscreen_stop_recording">Parar gravação</string>
+    <string name="fullscreen_start_recording">Gravar</string>
+    <string name="fullscreen_stop_recording">Parar</string>
 
     <string name="captures_title">Capturas</string>
     <string name="captures_subtitle">Fotos e vídeos gravados a partir da tela cheia.</string>
@@ -148,7 +149,7 @@
     <string name="captures_photo_format">Formato: JPG, qualidade 92.</string>
     <string name="captures_clean_video">Conteúdo: vídeo limpo, sem overlays do app.</string>
     <string name="captures_recording_available_fullscreen">Disponível na tela cheia pelo Menu Rápido.</string>
-    <string name="captures_recording_use_buttons">Use Iniciar gravação e Parar gravação.</string>
+    <string name="captures_recording_use_buttons">Use Gravar e Parar.</string>
     <string name="captures_recording_format">Formato: MP4, com áudio quando a câmera enviar áudio compatível.</string>
     <string name="captures_storage_choose_folder">Use Alterar local para escolher uma pasta.</string>
     <string name="captures_storage_external_support">Pendrive, HD ou SSD dependem do suporte do Android TV.</string>

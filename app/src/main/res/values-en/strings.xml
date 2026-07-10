@@ -111,6 +111,7 @@
     <string name="mosaic_mode_low_latency">Lower latency</string>
     <string name="mosaic_mode_stability">Stability</string>
     <string name="mosaic_reorder_hint">Select two cameras to swap. Hold OK for a few seconds to remove a camera from the mosaic. Press Back to finish.</string>
+    <string name="mosaic_quick_menu_hint">Press Back/Return to open the mosaic quick menu.</string>
     <string name="mosaic_remove_title">Remove from mosaic?</string>
     <string name="mosaic_remove_message">The camera will remain registered.</string>
     <string name="mosaic_switch_title">Switch mosaic?</string>
@@ -127,8 +128,8 @@
     <string name="fullscreen_take_photo">Take photo</string>
     <string name="fullscreen_opening_camera">Opening camera...</string>
     <string name="fullscreen_quick_menu_hint">Press OK/Enter to open the quick menu.</string>
-    <string name="fullscreen_start_recording">Start recording</string>
-    <string name="fullscreen_stop_recording">Stop recording</string>
+    <string name="fullscreen_start_recording">Record</string>
+    <string name="fullscreen_stop_recording">Stop</string>
     <string name="captures_title">Captures</string>
     <string name="captures_subtitle">Photos and videos recorded from fullscreen.</string>
     <string name="captures_change_location">Change location</string>
@@ -140,7 +141,7 @@
     <string name="captures_photo_format">Format: JPG, quality 92.</string>
     <string name="captures_clean_video">Content: clean video, without app overlays.</string>
     <string name="captures_recording_available_fullscreen">Available in fullscreen through the Quick Menu.</string>
-    <string name="captures_recording_use_buttons">Use Start recording and Stop recording.</string>
+    <string name="captures_recording_use_buttons">Use Record and Stop.</string>
     <string name="captures_recording_format">Format: MP4, with audio when the camera sends compatible audio.</string>
     <string name="captures_storage_choose_folder">Use Change location to choose a folder.</string>
     <string name="captures_storage_external_support">Flash drives, HDDs or SSDs depend on Android TV support.</string>

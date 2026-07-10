@@ -2,6 +2,8 @@ package com.sentinela.camtv.ui.capturegallery
 
 import com.sentinela.camtv.capture.CaptureLocationLabels
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CaptureLocationTextTest {
@@ -34,7 +36,7 @@ class CaptureLocationTextTest {
         assertEquals(
             listOf(
                 "Disponível na tela cheia pelo Menu Rápido.",
-                "Use Iniciar gravação e Parar gravação.",
+                "Use Gravar e Parar.",
                 "Formato: MP4, com áudio quando a câmera enviar áudio compatível.",
             ),
             recordingInfoLines(),
@@ -50,5 +52,11 @@ class CaptureLocationTextTest {
             ),
             storageInfoLines(customPhotoLocationEnabled = false),
         )
+    }
+
+    @Test
+    fun storageInfoCardOnlyAppearsWhenCustomLocationIsEnabled() {
+        assertTrue(shouldShowStorageInfoCard(customPhotoLocationEnabled = true))
+        assertFalse(shouldShowStorageInfoCard(customPhotoLocationEnabled = false))
     }
 }

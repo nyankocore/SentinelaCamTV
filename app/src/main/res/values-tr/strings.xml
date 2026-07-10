@@ -111,6 +111,7 @@
     <string name="mosaic_mode_low_latency">Daha düşük gecikme</string>
     <string name="mosaic_mode_stability">Kararlılık</string>
     <string name="mosaic_reorder_hint">Değiştirmek için iki kamera seçin. Bir kamerayı mozaikten kaldırmak için OK tuşunu birkaç saniye basılı tutun. Bitirmek için Back tuşuna basın.</string>
+    <string name="mosaic_quick_menu_hint">Mozaik hızlı menüsünü açmak için Back/Geri tuşuna basın.</string>
     <string name="mosaic_remove_title">Mozaikten kaldırılsın mı?</string>
     <string name="mosaic_remove_message">Kamera kayıtlı kalacak.</string>
     <string name="mosaic_switch_title">Mozaik değiştirilsin mi?</string>
@@ -127,8 +128,8 @@
     <string name="fullscreen_take_photo">Fotoğraf çek</string>
     <string name="fullscreen_opening_camera">Kamera açılıyor...</string>
     <string name="fullscreen_quick_menu_hint">Hızlı menüyü açmak için OK/Enter tuşuna basın.</string>
-    <string name="fullscreen_start_recording">Kaydı başlat</string>
-    <string name="fullscreen_stop_recording">Kaydı durdur</string>
+    <string name="fullscreen_start_recording">Kaydet</string>
+    <string name="fullscreen_stop_recording">Durdur</string>
     <string name="captures_title">Kayıtlar</string>
     <string name="captures_subtitle">Tam ekrandan alınan fotoğraflar ve videolar.</string>
     <string name="captures_change_location">Konumu değiştir</string>
@@ -140,7 +141,7 @@
     <string name="captures_photo_format">Biçim: JPG, kalite 92.</string>
     <string name="captures_clean_video">İçerik: uygulama kaplamaları olmadan temiz video.</string>
     <string name="captures_recording_available_fullscreen">Tam ekranda Hızlı Menüden kullanılabilir.</string>
-    <string name="captures_recording_use_buttons">Kaydı başlat ve Kaydı durdur seçeneklerini kullanın.</string>
+    <string name="captures_recording_use_buttons">Kaydet ve Durdur seçeneklerini kullanın.</string>
     <string name="captures_recording_format">Biçim: MP4, kamera uyumlu ses gönderirse sesli.</string>
     <string name="captures_storage_choose_folder">Klasör seçmek için Konumu değiştir seçeneğini kullanın.</string>
     <string name="captures_storage_external_support">USB bellek, HDD veya SSD desteği Android TV sistemine bağlıdır.</string>

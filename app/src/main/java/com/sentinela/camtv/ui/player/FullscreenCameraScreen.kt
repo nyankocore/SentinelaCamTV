@@ -6,6 +6,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -19,15 +20,21 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.media3.ui.PlayerView
+import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Text
 import com.sentinela.camtv.R
 import com.sentinela.camtv.player.DvrRtspUrlBuilder
-import com.sentinela.camtv.ui.common.QuickMenu
-import com.sentinela.camtv.ui.common.QuickMenuAction
+import com.sentinela.camtv.ui.common.QuickActionDock
+import com.sentinela.camtv.ui.common.QuickActionDockAction
+import com.sentinela.camtv.ui.common.QuickActionIcon
+import com.sentinela.camtv.ui.common.quickActionModeIcon
 import com.sentinela.camtv.ui.design.SentinelaOverlayCard
 import com.sentinela.camtv.ui.design.SentinelaTransientMessage
 import com.sentinela.camtv.ui.design.SentinelaTvColors
+import com.sentinela.camtv.ui.design.SentinelaTvShape
 import com.sentinela.camtv.ui.labels.localizedAudioLabel
 import com.sentinela.camtv.ui.labels.localizedInfoMenuLabel
 import com.sentinela.camtv.ui.labels.localizedStreamQualityLabel
@@ -137,13 +144,20 @@ fun FullscreenCameraScreen(
                 recordingProbeActive = recordingProbeActive,
                 onStartRecordingProbe = onStartRecordingProbe,
                 onStopRecordingProbe = onStopRecordingProbe,
+                onDismissQuickMenu = onDismissQuickMenu,
                 onOpenHome = onOpenHome,
                 onExitApp = onExitApp,
-                modifier = Modifier.align(Alignment.BottomCenter),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 22.dp),
             )
         } else if (state.showQuickMenuHint) {
             FullscreenQuickMenuHint(
                 modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
+
+        if (recordingProbeActive && !state.quickMenuVisible) {
+            RecordingIndicator(
+                modifier = Modifier.align(Alignment.TopStart).padding(start = 28.dp, top = 28.dp),
             )
         }
 
@@ -168,18 +182,23 @@ private fun FullscreenQuickMenu(
     recordingProbeActive: Boolean,
     onStartRecordingProbe: () -> Unit,
     onStopRecordingProbe: () -> Unit,
+    onDismissQuickMenu: () -> Unit,
     onOpenHome: () -> Unit,
     onExitApp: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    QuickMenu(
+    QuickActionDock(
         actions = listOf(
-            QuickMenuAction(localizedAudioLabel(state.audioMode), onToggleAudio),
-            QuickMenuAction(localizedStreamQualityLabel(state.streamQuality), onToggleStreamQuality),
-            QuickMenuAction(localizedInfoMenuLabel(state.showInfo), onToggleInfo),
-            QuickMenuAction(localizedTransmissionModeMenuLabel(state.transmissionMode), onToggleTransmissionMode),
-            QuickMenuAction(stringResource(R.string.fullscreen_take_photo), onTakePhoto),
-            QuickMenuAction(
+            QuickActionDockAction(
+                label = stringResource(R.string.fullscreen_take_photo),
+                icon = QuickActionIcon.Photo,
+                onClick = {
+                    onDismissQuickMenu()
+                    onTakePhoto()
+                },
+                width = 118.dp,
+            ),
+            QuickActionDockAction(
                 label = stringResource(
                     if (recordingProbeActive) {
                         R.string.fullscreen_stop_recording
@@ -187,11 +206,25 @@ private fun FullscreenQuickMenu(
                         R.string.fullscreen_start_recording
                     },
                 ),
-                onClick = if (recordingProbeActive) onStopRecordingProbe else onStartRecordingProbe,
+                icon = if (recordingProbeActive) QuickActionIcon.Stop else QuickActionIcon.Record,
+                onClick = {
+                    onDismissQuickMenu()
+                    if (recordingProbeActive) {
+                        onStopRecordingProbe()
+                    } else {
+                        onStartRecordingProbe()
+                    }
+                },
+                width = 104.dp,
             ),
-            QuickMenuAction(stringResource(R.string.mosaic_quick_home), onOpenHome),
-            QuickMenuAction(stringResource(R.string.mosaic_quick_exit_app), onExitApp),
+            QuickActionDockAction(localizedAudioLabel(state.audioMode), QuickActionIcon.Audio, onToggleAudio, width = 126.dp),
+            QuickActionDockAction(localizedStreamQualityLabel(state.streamQuality), QuickActionIcon.Video, onToggleStreamQuality, width = 116.dp),
+            QuickActionDockAction(localizedInfoMenuLabel(state.showInfo), QuickActionIcon.Info, onToggleInfo, width = 128.dp),
+            QuickActionDockAction(localizedTransmissionModeMenuLabel(state.transmissionMode), state.transmissionMode.quickActionModeIcon(), onToggleTransmissionMode, width = 154.dp),
+            QuickActionDockAction(stringResource(R.string.mosaic_quick_home), QuickActionIcon.Home, onOpenHome, width = 126.dp),
+            QuickActionDockAction(stringResource(R.string.mosaic_quick_exit_app), QuickActionIcon.Exit, onExitApp, width = 118.dp),
         ),
+        initialFocusedIndex = if (recordingProbeActive) 1 else 0,
         modifier = modifier,
     )
 }
@@ -230,6 +263,29 @@ private fun FullscreenOverlayCard(
     )
 }
 
+@Composable
+private fun RecordingIndicator(
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .widthIn(min = 84.dp)
+            .background(
+                color = SentinelaTvColors.panel.copy(alpha = 0.78f),
+                shape = SentinelaTvShape.overlay,
+            )
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "REC",
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+}
+
 internal fun Key.opensFullscreenQuickMenu(): Boolean =
     this == Key.Enter ||
         this == Key.NumPadEnter ||
@@ -246,8 +302,8 @@ internal fun Key.fullscreenNavigationDirection(): MosaicNavigationDirection? = w
 internal fun fullscreenRecordingMenuLabel(
     recordingProbeActive: Boolean,
 ): String = when {
-    recordingProbeActive -> "Parar gravação"
-    else -> "Iniciar gravação"
+    recordingProbeActive -> "Parar"
+    else -> "Gravar"
 }
 
 private const val FULLSCREEN_QUICK_MENU_HINT_DURATION_MS = 4_000L

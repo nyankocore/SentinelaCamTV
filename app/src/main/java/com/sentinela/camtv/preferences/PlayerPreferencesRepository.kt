@@ -27,6 +27,7 @@ class PlayerPreferencesRepository(
             showMosaicInfo = preferences[SHOW_MOSAIC_INFO] ?: preferences[SHOW_PLAYER_INFO] ?: true,
             showFullscreenInfo = preferences[SHOW_FULLSCREEN_INFO] ?: preferences[SHOW_PLAYER_INFO] ?: true,
             fullscreenQuickMenuHintSeen = preferences[FULLSCREEN_QUICK_MENU_HINT_SEEN] ?: false,
+            mosaicQuickMenuHintSeen = preferences[MOSAIC_QUICK_MENU_HINT_SEEN] ?: false,
             mosaicStreamQuality = preferences[MOSAIC_STREAM_QUALITY]
                 ?.let { value -> runCatching { StreamQuality.valueOf(value) }.getOrNull() }
                 ?: StreamQuality.SD,
@@ -64,6 +65,12 @@ class PlayerPreferencesRepository(
     override suspend fun setFullscreenQuickMenuHintSeen(seen: Boolean) {
         dataStore.edit { preferences ->
             preferences[FULLSCREEN_QUICK_MENU_HINT_SEEN] = seen
+        }
+    }
+
+    override suspend fun setMosaicQuickMenuHintSeen(seen: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[MOSAIC_QUICK_MENU_HINT_SEEN] = seen
         }
     }
 
@@ -110,6 +117,7 @@ class PlayerPreferencesRepository(
         val SHOW_MOSAIC_INFO = booleanPreferencesKey("show_mosaic_info")
         val SHOW_FULLSCREEN_INFO = booleanPreferencesKey("show_fullscreen_info")
         val FULLSCREEN_QUICK_MENU_HINT_SEEN = booleanPreferencesKey("fullscreen_quick_menu_hint_seen")
+        val MOSAIC_QUICK_MENU_HINT_SEEN = booleanPreferencesKey("mosaic_quick_menu_hint_seen")
         val MOSAIC_STREAM_QUALITY = stringPreferencesKey("mosaic_stream_quality")
         val GLOBAL_TRANSMISSION_MODE = stringPreferencesKey("global_transmission_mode")
         val ACTIVE_MOSAIC_INDEX = intPreferencesKey("active_mosaic_index")

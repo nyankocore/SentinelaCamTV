@@ -30,6 +30,7 @@ data class MosaicUiState(
     val activeMosaicIndex: Int = 0,
     val showInfo: Boolean = true,
     val quickMenuVisible: Boolean = false,
+    val showQuickMenuHint: Boolean = false,
     val reorderMode: Boolean = false,
     val selectedForSwapId: String? = null,
     val cameraPendingDeletion: Camera? = null,
@@ -137,6 +138,7 @@ class MosaicViewModel(
             activeMosaicIndex = core.activeMosaicIndex,
             showInfo = core.preferences.showMosaicInfo,
             quickMenuVisible = core.quickMenuVisible,
+            showQuickMenuHint = core.cameras.isNotEmpty() && !core.preferences.mosaicQuickMenuHintSeen,
             reorderMode = core.reorderMode,
             selectedForSwapId = core.selectedForSwapId,
             cameraPendingDeletion = core.cameras.firstOrNull { it.id == pendingDeletionId },
@@ -166,6 +168,12 @@ class MosaicViewModel(
 
     fun dismissQuickMenu() {
         quickMenuVisible.value = false
+    }
+
+    fun markQuickMenuHintSeen() {
+        viewModelScope.launch {
+            settingsRepository.setMosaicQuickMenuHintSeen(true)
+        }
     }
 
     fun onCameraClick(camera: Camera) {

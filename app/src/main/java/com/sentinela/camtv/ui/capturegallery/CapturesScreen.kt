@@ -151,11 +151,13 @@ fun CapturesScreen(
                     lines = localizedRecordingInfoLines(),
                     scale = scale,
                 )
-                CaptureInfoCard(
-                    title = stringResource(R.string.captures_storage_title),
-                    lines = localizedStorageInfoLines(customPhotoLocationEnabled),
-                    scale = scale,
-                )
+                if (shouldShowStorageInfoCard(customPhotoLocationEnabled)) {
+                    CaptureInfoCard(
+                        title = stringResource(R.string.captures_storage_title),
+                        lines = localizedStorageInfoLines(customPhotoLocationEnabled),
+                        scale = scale,
+                    )
+                }
             }
 
             state.message?.let { message ->
@@ -178,7 +180,7 @@ private fun localizedRecordingInfoLines(): List<String> = listOf(
 
 internal fun recordingInfoLines(): List<String> = listOf(
     "Disponível na tela cheia pelo Menu Rápido.",
-    "Use Iniciar gravação e Parar gravação.",
+    "Use Gravar e Parar.",
     "Formato: MP4, com áudio quando a câmera enviar áudio compatível.",
 )
 
@@ -208,6 +210,9 @@ internal fun storageInfoLines(customPhotoLocationEnabled: Boolean): List<String>
             "Fotos e vídeos usam as pastas padrão do Android.",
         )
     }
+
+internal fun shouldShowStorageInfoCard(customPhotoLocationEnabled: Boolean): Boolean =
+    customPhotoLocationEnabled
 
 @Composable
 private fun CapturesInfoText(

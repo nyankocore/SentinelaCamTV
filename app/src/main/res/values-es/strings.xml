@@ -111,6 +111,7 @@
     <string name="mosaic_mode_low_latency">Menor latencia</string>
     <string name="mosaic_mode_stability">Estabilidad</string>
     <string name="mosaic_reorder_hint">Selecciona dos cámaras para intercambiar. Mantén OK unos segundos para quitar una cámara del mosaico. Presiona Back para terminar.</string>
+    <string name="mosaic_quick_menu_hint">Presiona Back/Retorno para abrir el menú rápido del mosaico.</string>
     <string name="mosaic_remove_title">¿Quitar del mosaico?</string>
     <string name="mosaic_remove_message">La cámara seguirá registrada.</string>
     <string name="mosaic_switch_title">¿Cambiar mosaico?</string>
@@ -127,8 +128,8 @@
     <string name="fullscreen_take_photo">Tomar foto</string>
     <string name="fullscreen_opening_camera">Abriendo cámara...</string>
     <string name="fullscreen_quick_menu_hint">Presiona OK/Enter para abrir el menú rápido.</string>
-    <string name="fullscreen_start_recording">Iniciar grabación</string>
-    <string name="fullscreen_stop_recording">Parar grabación</string>
+    <string name="fullscreen_start_recording">Grabar</string>
+    <string name="fullscreen_stop_recording">Parar</string>
     <string name="captures_title">Capturas</string>
     <string name="captures_subtitle">Fotos y videos grabados desde pantalla completa.</string>
     <string name="captures_change_location">Cambiar ubicación</string>
@@ -140,7 +141,7 @@
     <string name="captures_photo_format">Formato: JPG, calidad 92.</string>
     <string name="captures_clean_video">Contenido: video limpio, sin overlays de la app.</string>
     <string name="captures_recording_available_fullscreen">Disponible en pantalla completa por el Menú Rápido.</string>
-    <string name="captures_recording_use_buttons">Usa Iniciar grabación y Parar grabación.</string>
+    <string name="captures_recording_use_buttons">Usa Grabar y Parar.</string>
     <string name="captures_recording_format">Formato: MP4, con audio cuando la cámara envíe audio compatible.</string>
     <string name="captures_storage_choose_folder">Usa Cambiar ubicación para elegir una carpeta.</string>
     <string name="captures_storage_external_support">Pendrive, HDD o SSD dependen del soporte de Android TV.</string>

@@ -51,8 +51,10 @@ import com.sentinela.camtv.recording.RecordingProbeRepository
 import com.sentinela.camtv.recording.RecordingProbeRequest
 import com.sentinela.camtv.recording.RecordingStopSignal
 import com.sentinela.camtv.recording.userMessage as recordingUserMessage
-import com.sentinela.camtv.ui.common.QuickMenu
-import com.sentinela.camtv.ui.common.QuickMenuAction
+import com.sentinela.camtv.ui.common.QuickActionDock
+import com.sentinela.camtv.ui.common.QuickActionDockAction
+import com.sentinela.camtv.ui.common.QuickActionIcon
+import com.sentinela.camtv.ui.common.quickActionModeIcon
 import com.sentinela.camtv.ui.design.SentinelaOverlayCard
 import com.sentinela.camtv.ui.design.SentinelaTvColors
 import com.sentinela.camtv.ui.design.SentinelaTvDialog
@@ -68,6 +70,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val CAMERA_FOCUS_HIDE_DELAY_MS = 5_000L
+private const val MOSAIC_QUICK_MENU_HINT_DURATION_MS = 4_000L
 
 @Composable
 fun MosaicScreen(
@@ -323,6 +326,19 @@ fun MosaicScreen(
             modifier = Modifier.fillMaxSize(),
         )
 
+        val showMosaicQuickMenuHint = state.showQuickMenuHint &&
+            !state.quickMenuVisible &&
+            !state.reorderMode &&
+            state.cameraPendingDeletion == null &&
+            pendingMosaicSwitch == null
+
+        LaunchedEffect(showMosaicQuickMenuHint) {
+            if (showMosaicQuickMenuHint) {
+                delay(MOSAIC_QUICK_MENU_HINT_DURATION_MS)
+                mosaicViewModel.markQuickMenuHintSeen()
+            }
+        }
+
         if (state.reorderMode) {
             ReorderHint(
                 modifier = Modifier.align(Alignment.TopCenter),
@@ -341,7 +357,11 @@ fun MosaicScreen(
                     mosaicViewModel.dismissQuickMenu()
                     onOpenHome()
                 },
-                modifier = Modifier.align(Alignment.Center),
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 22.dp),
+            )
+        } else if (showMosaicQuickMenuHint) {
+            MosaicQuickMenuHint(
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 28.dp),
             )
         }
 
@@ -520,14 +540,14 @@ private fun MosaicQuickMenu(
     onOpenHome: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    QuickMenu(
+    QuickActionDock(
         actions = listOf(
-            QuickMenuAction(stringResource(R.string.mosaic_quick_exit_app), onExitApp),
-            QuickMenuAction(localizedInfoMenuLabel(state.showInfo), onToggleInfo),
-            QuickMenuAction(localizedStreamQualityLabel(state.streamQuality), onToggleStreamQuality),
-            QuickMenuAction(stringResource(R.string.mosaic_quick_edit), onStartReorder),
-            QuickMenuAction(localizedTransmissionModeMenuLabel(state.transmissionMode), onToggleTransmissionMode),
-            QuickMenuAction(stringResource(R.string.mosaic_quick_home), onOpenHome),
+            QuickActionDockAction(stringResource(R.string.mosaic_quick_edit), QuickActionIcon.Edit, onStartReorder, width = 136.dp),
+            QuickActionDockAction(localizedStreamQualityLabel(state.streamQuality), QuickActionIcon.Video, onToggleStreamQuality, width = 116.dp),
+            QuickActionDockAction(localizedInfoMenuLabel(state.showInfo), QuickActionIcon.Info, onToggleInfo, width = 128.dp),
+            QuickActionDockAction(localizedTransmissionModeMenuLabel(state.transmissionMode), state.transmissionMode.quickActionModeIcon(), onToggleTransmissionMode, width = 154.dp),
+            QuickActionDockAction(stringResource(R.string.mosaic_quick_home), QuickActionIcon.Home, onOpenHome, width = 126.dp),
+            QuickActionDockAction(stringResource(R.string.mosaic_quick_exit_app), QuickActionIcon.Exit, onExitApp, width = 118.dp),
         ),
         modifier = modifier,
     )
@@ -541,6 +561,17 @@ private fun ReorderHint(
         text = stringResource(R.string.mosaic_reorder_hint),
         maxWidth = 860.dp,
         modifier = modifier.padding(top = 14.dp),
+    )
+}
+
+@Composable
+private fun MosaicQuickMenuHint(
+    modifier: Modifier = Modifier,
+) {
+    SentinelaOverlayCard(
+        text = stringResource(R.string.mosaic_quick_menu_hint),
+        maxWidth = 560.dp,
+        modifier = modifier,
     )
 }
 

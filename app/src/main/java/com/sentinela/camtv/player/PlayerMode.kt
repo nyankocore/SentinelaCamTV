@@ -41,17 +41,17 @@ data class PlayerBufferPreset(
 
 object PlayerBufferPresets {
     val LowLatency = PlayerBufferPreset(
-        minBufferMs = 100,
-        maxBufferMs = 150,
+        minBufferMs = 75,
+        maxBufferMs = 125,
         bufferForPlaybackMs = 50,
-        bufferAfterRebufferMs = 100,
+        bufferAfterRebufferMs = 75,
     )
 
     val Quality = PlayerBufferPreset(
-        minBufferMs = 500,
-        maxBufferMs = 1_500,
-        bufferForPlaybackMs = 250,
-        bufferAfterRebufferMs = 500,
+        minBufferMs = 750,
+        maxBufferMs = 2_000,
+        bufferForPlaybackMs = 350,
+        bufferAfterRebufferMs = 750,
     )
 }
 

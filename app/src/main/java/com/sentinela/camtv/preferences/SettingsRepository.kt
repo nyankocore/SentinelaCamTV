@@ -10,6 +10,7 @@ interface SettingsRepository {
     suspend fun setShowMosaicInfo(showMosaicInfo: Boolean)
     suspend fun setShowFullscreenInfo(showFullscreenInfo: Boolean)
     suspend fun setFullscreenQuickMenuHintSeen(seen: Boolean)
+    suspend fun setMosaicQuickMenuHintSeen(seen: Boolean)
     suspend fun setMosaicStreamQuality(streamQuality: StreamQuality)
     suspend fun setGlobalTransmissionMode(transmissionMode: TransmissionMode)
     suspend fun setActiveMosaicIndex(index: Int)

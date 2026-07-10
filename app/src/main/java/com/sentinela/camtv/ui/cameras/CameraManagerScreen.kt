@@ -462,16 +462,18 @@ private fun OnvifTab(
 
         Spacer(Modifier.height(metrics.dp(32f)))
 
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(metrics.contentGap),
-            verticalAlignment = Alignment.Top,
         ) {
-            Column(
-                modifier = Modifier.width(metrics.leftWidth),
-            ) {
+            Column(modifier = Modifier.width(metrics.leftWidth)) {
                 SectionHeading(stringResource(R.string.camera_credentials), metrics)
-                Spacer(Modifier.height(metrics.dp(10f)))
+            }
+            Spacer(Modifier.height(metrics.dp(10f)))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(metrics.contentGap),
+                verticalAlignment = Alignment.Top,
+            ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(metrics.dp(24f))) {
                     SentinelaTextField(
                         fieldId = CameraTextFieldId.ONVIF_USERNAME,
@@ -511,13 +513,13 @@ private fun OnvifTab(
                         onActiveEditingFieldIdChanged = onActiveEditingFieldIdChanged,
                     )
                 }
+                InfoCard(
+                    message = stringResource(R.string.camera_credentials_encrypted),
+                    width = metrics.statusCardWidth,
+                    height = metrics.dp(76f),
+                    metrics = metrics,
+                )
             }
-            InfoCard(
-                message = stringResource(R.string.camera_credentials_encrypted),
-                width = metrics.statusCardWidth,
-                height = metrics.dp(76f),
-                metrics = metrics,
-            )
         }
 
         Spacer(Modifier.height(metrics.dp(30f)))

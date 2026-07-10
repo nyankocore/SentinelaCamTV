@@ -8,6 +8,7 @@ data class PlayerUiPreferences(
     val showMosaicInfo: Boolean = true,
     val showFullscreenInfo: Boolean = true,
     val fullscreenQuickMenuHintSeen: Boolean = false,
+    val mosaicQuickMenuHintSeen: Boolean = false,
     val mosaicStreamQuality: StreamQuality = StreamQuality.SD,
     val globalTransmissionMode: TransmissionMode = TransmissionMode.MENOR_LATENCIA,
     val activeMosaicIndex: Int = 0,

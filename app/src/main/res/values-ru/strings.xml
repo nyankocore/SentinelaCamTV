@@ -111,6 +111,7 @@
     <string name="mosaic_mode_low_latency">Меньшая задержка</string>
     <string name="mosaic_mode_stability">Стабильность</string>
     <string name="mosaic_reorder_hint">Выберите две камеры для обмена. Удерживайте OK несколько секунд, чтобы убрать камеру из мозаики. Нажмите Back для завершения.</string>
+    <string name="mosaic_quick_menu_hint">Нажмите Back/Назад, чтобы открыть быстрое меню мозаики.</string>
     <string name="mosaic_remove_title">Убрать из мозаики?</string>
     <string name="mosaic_remove_message">Камера останется зарегистрированной.</string>
     <string name="mosaic_switch_title">Переключить мозаику?</string>
@@ -127,8 +128,8 @@
     <string name="fullscreen_take_photo">Сделать фото</string>
     <string name="fullscreen_opening_camera">Открытие камеры...</string>
     <string name="fullscreen_quick_menu_hint">Нажмите OK/Enter, чтобы открыть быстрое меню.</string>
-    <string name="fullscreen_start_recording">Начать запись</string>
-    <string name="fullscreen_stop_recording">Остановить запись</string>
+    <string name="fullscreen_start_recording">Запись</string>
+    <string name="fullscreen_stop_recording">Стоп</string>
     <string name="captures_title">Снимки</string>
     <string name="captures_subtitle">Фото и видео, записанные из полноэкранного режима.</string>
     <string name="captures_change_location">Изменить место</string>
@@ -140,7 +141,7 @@
     <string name="captures_photo_format">Формат: JPG, качество 92.</string>
     <string name="captures_clean_video">Содержимое: чистое видео без оверлеев приложения.</string>
     <string name="captures_recording_available_fullscreen">Доступно в полном экране через Быстрое меню.</string>
-    <string name="captures_recording_use_buttons">Используйте Начать запись и Остановить запись.</string>
+    <string name="captures_recording_use_buttons">Используйте кнопки «Запись» и «Стоп».</string>
     <string name="captures_recording_format">Формат: MP4, со звуком, если камера отправляет совместимый звук.</string>
     <string name="captures_storage_choose_folder">Используйте Изменить место, чтобы выбрать папку.</string>
     <string name="captures_storage_external_support">Флешка, HDD или SSD зависят от поддержки Android TV.</string>

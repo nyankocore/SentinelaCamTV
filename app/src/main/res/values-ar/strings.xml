@@ -111,6 +111,7 @@
     <string name="mosaic_mode_low_latency">زمن تأخير أقل</string>
     <string name="mosaic_mode_stability">الثبات</string>
     <string name="mosaic_reorder_hint">اختر كاميرتين للتبديل. اضغط OK لبضع ثوان لإزالة كاميرا من الفسيفساء. اضغط Back للإنهاء.</string>
+    <string name="mosaic_quick_menu_hint">اضغط Back/رجوع لفتح القائمة السريعة للفسيفساء.</string>
     <string name="mosaic_remove_title">إزالة من الفسيفساء؟</string>
     <string name="mosaic_remove_message">ستبقى الكاميرا مسجلة.</string>
     <string name="mosaic_switch_title">تبديل الفسيفساء؟</string>
@@ -127,8 +128,8 @@
     <string name="fullscreen_take_photo">التقاط صورة</string>
     <string name="fullscreen_opening_camera">جارٍ فتح الكاميرا...</string>
     <string name="fullscreen_quick_menu_hint">اضغط OK/Enter لفتح القائمة السريعة.</string>
-    <string name="fullscreen_start_recording">بدء التسجيل</string>
-    <string name="fullscreen_stop_recording">إيقاف التسجيل</string>
+    <string name="fullscreen_start_recording">تسجيل</string>
+    <string name="fullscreen_stop_recording">إيقاف</string>
     <string name="captures_title">اللقطات</string>
     <string name="captures_subtitle">صور وفيديوهات مسجلة من وضع ملء الشاشة.</string>
     <string name="captures_change_location">تغيير الموقع</string>
@@ -140,7 +141,7 @@
     <string name="captures_photo_format">التنسيق: JPG، جودة 92.</string>
     <string name="captures_clean_video">المحتوى: فيديو نظيف، بدون طبقات التطبيق.</string>
     <string name="captures_recording_available_fullscreen">متاح في ملء الشاشة عبر القائمة السريعة.</string>
-    <string name="captures_recording_use_buttons">استخدم بدء التسجيل وإيقاف التسجيل.</string>
+    <string name="captures_recording_use_buttons">استخدم تسجيل وإيقاف.</string>
     <string name="captures_recording_format">التنسيق: MP4، مع صوت عندما ترسل الكاميرا صوتًا متوافقًا.</string>
     <string name="captures_storage_choose_folder">استخدم تغيير الموقع لاختيار مجلد.</string>
     <string name="captures_storage_external_support">دعم الفلاش أو HDD أو SSD يعتمد على Android TV.</string>

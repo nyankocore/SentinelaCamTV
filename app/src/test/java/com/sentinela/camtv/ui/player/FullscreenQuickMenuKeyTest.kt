@@ -33,11 +33,11 @@ class FullscreenQuickMenuKeyTest {
     @Test
     fun recordingLabelUsesManualRecordingState() {
         assertEquals(
-            "Iniciar gravação",
+            "Gravar",
             fullscreenRecordingMenuLabel(recordingProbeActive = false),
         )
         assertEquals(
-            "Parar gravação",
+            "Parar",
             fullscreenRecordingMenuLabel(recordingProbeActive = true),
         )
     }

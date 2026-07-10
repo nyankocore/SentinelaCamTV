@@ -32,6 +32,11 @@ class PlayerUiPreferencesTest {
     }
 
     @Test
+    fun mosaicQuickMenuHintStartsUnseen() {
+        assertFalse(PlayerUiPreferences().mosaicQuickMenuHintSeen)
+    }
+
+    @Test
     fun mosaicStreamQualityDefaultsToSd() {
         assertEquals(StreamQuality.SD, PlayerUiPreferences().mosaicStreamQuality)
     }
