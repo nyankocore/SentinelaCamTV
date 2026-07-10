@@ -4,6 +4,8 @@ Sentinela Cam TV é um visualizador open-source de câmeras de segurança para A
 
 O aplicativo visualiza câmeras da rede local via RTSP direto e ONVIF, com mosaicos organizáveis, tela cheia, foto e gravações. O projeto prioriza privacidade, simplicidade e bom funcionamento em TVs e TV Boxes com hardware modesto.
 
+[Site oficial](https://nyankocore.github.io/)
+
 ![Mosaico atual do Sentinela Cam TV](docs/images/mosaico-readme.png)
 
 ## Principais recursos
