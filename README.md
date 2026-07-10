@@ -1,4 +1,4 @@
-,# Sentinela Cam TV
+# Sentinela Cam TV
 
 Sentinela Cam TV é um visualizador open-source de câmeras de segurança para Android TV e Google TV.
 
